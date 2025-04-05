@@ -1,0 +1,428 @@
+{
+  "estado_operativo": {
+    "operacion": {
+      "value": "Venta",
+      "aplica_para": [
+        "Todos"
+      ]
+    },
+    "disponibilidad": {
+      "value": "Vigente",
+      "aplica_para": [
+        "Todos"
+      ]
+    },
+    "estado_legal": {
+      "value": "Disponible",
+      "aplica_para": [
+        "Todos"
+      ]
+    },
+    "apto_credito": {
+      "value": true,
+      "aplica_para": [
+        "Casa",
+        "Departamento",
+        "PH"
+      ]
+    }
+  },
+  "estado_fisico": {
+    "estado_general": {
+      "value": "Muy bueno",
+      "aplica_para": [
+        "Todos"
+      ]
+    },
+    "antiguedad_anios": {
+      "value": 50,
+      "aplica_para": [
+        "Todos"
+      ]
+    },
+    "estado_construccion": {
+      "value": "No a estrenar",
+      "aplica_para": [
+        "Todos"
+      ]
+    }
+  },
+  "tipo": {
+    "categoria": {
+      "value": "Residencial",
+      "aplica_para": [
+        "Todos"
+      ]
+    },
+    "subtipo": {
+      "value": "Casa",
+      "aplica_para": [
+        "Todos"
+      ]
+    }
+  },
+  "ubicacion": {
+    "direccion": {
+      "calle": {
+        "value": "Güemes",
+        "aplica_para": [
+          "Todos"
+        ]
+      },
+      "numero": {
+        "value": "500",
+        "aplica_para": [
+          "Todos"
+        ]
+      },
+      "entre_calles": {
+        "value": [
+          "Saavedra",
+          "Av. Paraguay"
+        ],
+        "aplica_para": [
+          "Todos"
+        ]
+      },
+      "ciudad": {
+        "value": "Resistencia",
+        "aplica_para": [
+          "Todos"
+        ]
+      },
+      "provincia": {
+        "value": "Chaco",
+        "aplica_para": [
+          "Todos"
+        ]
+      },
+      "pais": {
+        "value": "Argentina",
+        "aplica_para": [
+          "Todos"
+        ]
+      },
+      "codigo_postal": {
+        "value": "3500",
+        "aplica_para": [
+          "Todos"
+        ]
+      }
+    },
+    "lat": {
+      "value": -27.451234,
+      "aplica_para": [
+        "Todos"
+      ]
+    },
+    "lng": {
+      "value": -58.987654,
+      "aplica_para": [
+        "Todos"
+      ]
+    },
+    "ubicacion_en_lote": {
+      "value": "Frente",
+      "aplica_para": [
+        "Casa",
+        "Terreno"
+      ]
+    },
+    "zona": {
+      "value": "Gran Resistencia",
+      "aplica_para": [
+        "Todos"
+      ]
+    },
+    "barrio": {
+      "value": "Centro",
+      "aplica_para": [
+        "Todos"
+      ]
+    }
+  },
+  "caracteristicas": {
+    "ambientes": {
+      "value": 14,
+      "aplica_para": [
+        "Casa",
+        "Departamento",
+        "PH"
+      ]
+    },
+    "dormitorios": {
+      "value": 6,
+      "aplica_para": [
+        "Casa",
+        "Departamento",
+        "PH"
+      ]
+    },
+    "banios": {
+      "value": 8,
+      "aplica_para": [
+        "Casa",
+        "Departamento",
+        "PH"
+      ]
+    },
+    "toilettes": {
+      "value": 1,
+      "aplica_para": [
+        "Casa",
+        "Departamento"
+      ]
+    },
+    "cocheras": {
+      "value": 2,
+      "aplica_para": [
+        "Casa",
+        "PH",
+        "Quinta"
+      ]
+    },
+    "tipo_cochera": {
+      "value": "Cubierta",
+      "aplica_para": [
+        "Casa",
+        "PH"
+      ]
+    },
+    "garage": {
+      "value": true,
+      "aplica_para": [
+        "Casa",
+        "PH"
+      ]
+    },
+    "patios": {
+      "value": 10,
+      "aplica_para": [
+        "Casa",
+        "Quinta"
+      ]
+    },
+    "terrazas": {
+      "value": 25,
+      "aplica_para": [
+        "Casa",
+        "PH"
+      ]
+    },
+    "hall_intimo": {
+      "value": true,
+      "aplica_para": [
+        "Casa"
+      ]
+    },
+    "pisos_propiedad": {
+      "value": 3,
+      "aplica_para": [
+        "Casa",
+        "Departamento"
+      ]
+    }
+  },
+  "superficie": {
+    "terreno_m2": {
+      "value": 101,
+      "aplica_para": [
+        "Casa",
+        "Terreno",
+        "PH"
+      ]
+    },
+    "frente_m": {
+      "value": 10,
+      "aplica_para": [
+        "Casa",
+        "Terreno"
+      ]
+    },
+    "largo_m": {
+      "value": 11,
+      "aplica_para": [
+        "Casa",
+        "Terreno"
+      ]
+    },
+    "cubierta_m2": {
+      "value": 300,
+      "aplica_para": [
+        "Casa",
+        "PH",
+        "Departamento"
+      ]
+    },
+    "descubierta_m2": {
+      "value": 0,
+      "aplica_para": [
+        "Casa",
+        "PH"
+      ]
+    },
+    "total_m2": {
+      "value": 300,
+      "aplica_para": [
+        "Todos"
+      ]
+    }
+  },
+  "servicios": {
+    "agua_corriente": {
+      "value": true,
+      "aplica_para": [
+        "Casa",
+        "Departamento",
+        "PH"
+      ]
+    },
+    "agua_caliente": {
+      "value": "Termotanque",
+      "aplica_para": [
+        "Casa",
+        "Departamento",
+        "PH"
+      ]
+    },
+    "cloacas": {
+      "value": true,
+      "aplica_para": [
+        "Casa",
+        "Departamento"
+      ]
+    },
+    "pavimento": {
+      "value": true,
+      "aplica_para": [
+        "Casa",
+        "Terreno"
+      ]
+    },
+    "luz": {
+      "value": true,
+      "aplica_para": [
+        "Todos"
+      ]
+    },
+    "gas": {
+      "value": false,
+      "aplica_para": [
+        "Casa",
+        "Departamento"
+      ]
+    },
+    "internet": {
+      "value": false,
+      "aplica_para": [
+        "Casa",
+        "Departamento",
+        "Oficina"
+      ]
+    }
+  },
+  "precio": {
+    "valor": {
+      "value": 138000,
+      "aplica_para": [
+        "Todos"
+      ]
+    },
+    "moneda": {
+      "value": "USD",
+      "aplica_para": [
+        "Todos"
+      ]
+    },
+    "expensas": {
+      "value": 160000,
+      "aplica_para": [
+        "Departamento",
+        "PH"
+      ]
+    }
+  },
+  "amenities": {
+    "quincho": {
+      "value": true,
+      "aplica_para": [
+        "Casa",
+        "Quinta"
+      ]
+    },
+    "pileta": {
+      "value": true,
+      "aplica_para": [
+        "Casa",
+        "Casaquinta"
+      ]
+    },
+    "parrilla": {
+      "value": true,
+      "aplica_para": [
+        "Todos"
+      ]
+    },
+    "jardin": {
+      "value": true,
+      "aplica_para": [
+        "Casa",
+        "PH",
+        "Quinta"
+      ]
+    },
+    "seguridad": {
+      "value": true,
+      "aplica_para": [
+        "Barrio privado",
+        "Casa"
+      ]
+    },
+    "lavadero": {
+      "value": true,
+      "aplica_para": [
+        "Todos"
+      ]
+    }
+  },
+  "multimedia": {
+    "imagenes": {
+      "value": [],
+      "aplica_para": [
+        "Todos"
+      ]
+    },
+    "video_url": {
+      "value": "",
+      "aplica_para": [
+        "Todos"
+      ]
+    },
+    "plano_url": {
+      "value": "",
+      "aplica_para": [
+        "Todos"
+      ]
+    }
+  },
+  "descripcion": {
+    "titulo": {
+      "value": "Casa en venta con 3 pisos y local comercial",
+      "aplica_para": [
+        "Casa"
+      ]
+    },
+    "descripcion_corta": {
+      "value": "Inmueble ideal para estudios y comercio",
+      "aplica_para": [
+        "Casa"
+      ]
+    },
+    "descripcion_larga": {
+      "value": "Importante esquina con 14 ambientes...",
+      "aplica_para": [
+        "Casa"
+      ]
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+    "Residencial": ["Casa", "Departamento", "PH", "Chalet", "Quinta"],
+    "Comercial": ["Local Comercial", "Oficina"],
+    "Industrial": ["Depósito", "Nave Industrial"],
+    "Rural": ["Estancia", "Chacra", "Campo"],
+    "Terreno": ["Lote Urbano", "Lote Rural"]
+  }
+  
