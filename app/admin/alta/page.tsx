@@ -95,7 +95,7 @@ export default function AltaPropiedad() {
       <div className="text-center mb-8">
         <Image src="/logo.png" alt="Short Inmobiliaria" width={120} height={120} className="mx-auto mb-2" />
         <h1 className="text-4xl font-extrabold text-gray-800">Alta de Propiedad</h1>
-        <p className="text-sm text-gray-500">Formulario dinámico y responsivo</p>
+        <p className="text-sm text-gray-500">Admin</p>
       </div>
 
       {/* Select Categoría */}
