@@ -1,9 +1,9 @@
-'use client'
+"use client"
 import NextImage from "next/image"
 import { useSelector, useDispatch } from "react-redux"
 import { RootState } from "@/lib/store/store"
 import { logoutUser } from "@/lib/store/authSlice"
-import { User, LogOut, Settings } from "lucide-react"
+import { User, LogOut } from "lucide-react"
 import { useState } from "react"
 
 interface HeaderProps {
@@ -21,12 +21,12 @@ export function Header({
   onToggleAdmin,
   isAdminMode = false 
 }: HeaderProps) {
-  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth)
+  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth as any)
   const dispatch = useDispatch()
   const [showUserMenu, setShowUserMenu] = useState(false)
 
   const handleLogout = async () => {
-    await dispatch(logoutUser())
+    await dispatch(logoutUser() as any)
     if (onLogout) onLogout()
   }
 
@@ -66,7 +66,8 @@ export function Header({
                   onClick={onToggleAdmin}
                   className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
                 >
-                  {isAdminMode ? 'Home' : 'Panel Admin'}                </button>
+                  {isAdminMode ? 'Home' : 'Panel Admin'}
+                </button>
               )}
 
               {/* Círculo de usuario */}
@@ -84,7 +85,8 @@ export function Header({
                     <div className="px-4 py-2 border-b border-gray-100">
                       <p className="text-sm font-medium text-gray-900">{user?.nombre}</p>
                       <p className="text-xs text-gray-500">{user?.email}</p>
-                      <p className="text-xs text-blue-600 capitalize">{user?.rol}</p>                   </div>
+                      <p className="text-xs text-blue-600 capitalize">{user?.rol}</p>
+                    </div>
                     <button
                       onClick={handleLogout}
                       className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"

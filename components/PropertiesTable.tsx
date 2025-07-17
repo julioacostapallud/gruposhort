@@ -19,19 +19,23 @@ import {
   Clock,
   AlertCircle,
   X,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Trash2
 } from 'lucide-react'
 import { Propiedad } from '@/lib/services/propiedades'
-import { propiedades } from '@/lib/services/propiedades'
+import { propiedadesConDelete as propiedades } from '@/lib/services/propiedades'
 import NextImage from "next/image"
+import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from './ui/dialog'
+import { useToast } from '@/hooks/use-toast'
 
 interface PropertiesTableProps {
   onViewProperty: (property: Propiedad) => void
   onEditProperty: (property: Propiedad) => void
   onNewProperty: () => void
+  propertiesVersion?: number
 }
 
-export function PropertiesTable({ onViewProperty, onEditProperty, onNewProperty }: PropertiesTableProps) {
+export function PropertiesTable({ onViewProperty, onEditProperty, onNewProperty, propertiesVersion }: PropertiesTableProps) {
   const [properties, setProperties] = useState<Propiedad[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -47,10 +51,13 @@ export function PropertiesTable({ onViewProperty, onEditProperty, onNewProperty 
     min_superficie: '',
     max_superficie: ''
   })
+  const { toast } = useToast();
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     loadProperties()
-  }, [])
+  }, [propertiesVersion])
 
   const loadProperties = async () => {
     try {
@@ -156,6 +163,24 @@ export function PropertiesTable({ onViewProperty, onEditProperty, onNewProperty 
            matchesMinSuperficie && matchesMaxSuperficie
   })
 
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    setDeleting(true);
+    try {
+      await propiedades.delete(deleteId);
+      setProperties(prev => prev.filter(p => p.id !== deleteId));
+      setDeleteId(null);
+    } catch (error) {
+      toast({
+        title: 'Error al eliminar',
+        description: 'No se pudo eliminar la propiedad. Intenta nuevamente.',
+        variant: 'destructive',
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
@@ -198,7 +223,15 @@ export function PropertiesTable({ onViewProperty, onEditProperty, onNewProperty 
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredProperties.map((property) => (
-              <div key={property.id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow">
+              <div key={property.id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow relative">
+                {/* Botón de eliminar */}
+                <button
+                  className="absolute top-4 right-4 bg-white rounded-full p-2 shadow hover:bg-red-100 z-10"
+                  title="Eliminar propiedad"
+                  onClick={() => setDeleteId(property.id)}
+                >
+                  <Trash2 className="h-5 w-5 text-red-600" />
+                </button>
                 {/* Imagen principal */}
                 <div className="relative">
                   {property.imagenes && property.imagenes.length > 0 ? (
@@ -235,9 +268,10 @@ export function PropertiesTable({ onViewProperty, onEditProperty, onNewProperty 
                   {/* Precio */}
                   <div className="absolute bottom-4 right-4">
                     <div className="bg-white/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">
-                      <p className="text-lg font-bold text-green-600 flex items-center gap-1">
-                        <DollarSign className="h-4 w-4" />
-                        {formatPrice(property.precio)}
+                      <p className={`text-lg font-bold flex items-center gap-1 ${property.moneda.id === 2 ? 'text-green-800' : 'text-blue-700'}`}>
+                        {property.moneda.id === 2 ? '🇺🇸' : '🇦🇷'}
+                        <span>{property.moneda.simbolo}</span>
+                        <span className="ml-1">{parseFloat(property.precio).toLocaleString('es-AR', { minimumFractionDigits: 0 })}</span>
                       </p>
                     </div>
                   </div>
@@ -253,64 +287,68 @@ export function PropertiesTable({ onViewProperty, onEditProperty, onNewProperty 
                     {property.descripcion || 'Sin descripción disponible'}
                   </p>
 
-                  {/* Características principales */}
-                  <div className="flex items-center justify-between mb-4">
+                  {/* Características principales y adicionales */}
+                  <div className="flex flex-wrap items-center gap-3 mb-4">
                     {property.superficie_m2 && (
-                      <div className="flex items-center text-gray-600">
-                        <Ruler className="h-5 w-5 mr-1" />
+                      <div className="flex items-center text-gray-600 bg-gray-100 rounded px-2 py-1 text-xs">
+                        <Ruler className="h-4 w-4 mr-1" />
                         <span>{property.superficie_m2} m²</span>
                       </div>
                     )}
                     {property.dormitorios && (
-                      <div className="flex items-center text-gray-600">
-                        <Bed className="h-5 w-5 mr-1" />
+                      <div className="flex items-center text-gray-600 bg-gray-100 rounded px-2 py-1 text-xs">
+                        <Bed className="h-4 w-4 mr-1" />
                         <span>{property.dormitorios} Hab</span>
                       </div>
                     )}
                     {property.banos && (
-                      <div className="flex items-center text-gray-600">
-                        <Bath className="h-5 w-5 mr-1" />
+                      <div className="flex items-center text-gray-600 bg-gray-100 rounded px-2 py-1 text-xs">
+                        <Bath className="h-4 w-4 mr-1" />
                         <span>{property.banos} Baño{property.banos > 1 ? 's' : ''}</span>
                       </div>
                     )}
+                    {/* Todas las características */}
+                    {property.caracteristicas && property.caracteristicas.length > 0 && property.caracteristicas.map((car) => (
+                      <div key={car.id} className="flex items-center text-gray-600 bg-blue-50 rounded px-2 py-1 text-xs">
+                        <Star className="h-4 w-4 mr-1 text-blue-400" />
+                        <span>{car.nombre}</span>
+                      </div>
+                    ))}
                   </div>
 
                   {/* Ubicación */}
                   {property.direccion && (
-                    <div className="flex items-center gap-2 mb-4 text-sm text-gray-600">
+                    <div className="flex items-center gap-2 mb-2 text-sm text-gray-600">
                       <MapPin className="h-4 w-4" />
                       <span>{property.direccion.ciudad}, {property.direccion.provincia}</span>
                     </div>
                   )}
 
-                  {/* Estados adicionales */}
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    <div className="px-2 py-1 rounded-md text-xs bg-orange-100 text-orange-800">
+                  {/* Estados adicionales con íconos */}
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    <div className="px-2 py-1 rounded-md text-xs bg-orange-100 text-orange-800 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
                       {property.estado_registro.nombre}
                     </div>
-                    <div className="px-2 py-1 rounded-md text-xs bg-indigo-100 text-indigo-800">
+                    <div className="px-2 py-1 rounded-md text-xs bg-indigo-100 text-indigo-800 flex items-center gap-1">
+                      <CheckCircle className="h-3 w-3" />
                       {property.estado_fisico.nombre}
                     </div>
                   </div>
 
                   {/* Propietarios */}
                   {property.propietarios && property.propietarios.length > 0 && (
-                    <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                      <p className="text-xs text-gray-500 mb-2 flex items-center gap-1">
+                    <div className="mb-2 p-2 bg-gray-50 rounded-lg">
+                      <p className="text-xs text-gray-500 mb-1 flex items-center gap-1">
                         <Users className="h-3 w-3" />
                         Propietarios:
                       </p>
                       <div className="flex flex-wrap gap-1">
-                        {property.propietarios.slice(0, 2).map((prop, index) => (
+                        {property.propietarios.map((prop) => (
                           <div key={prop.id} className="px-2 py-1 rounded-md text-xs bg-emerald-100 text-emerald-800">
                             {prop.nombre_completo}
                           </div>
                         ))}
-                        {property.propietarios.length > 2 && (
-                          <div className="px-2 py-1 rounded-md text-xs bg-emerald-100 text-emerald-800">
-                            +{property.propietarios.length - 2} más
-                          </div>
-                        )}
                       </div>
                     </div>
                   )}
@@ -338,6 +376,33 @@ export function PropertiesTable({ onViewProperty, onEditProperty, onNewProperty 
           </div>
         )}
       </div>
+      {/* Modal de confirmación de eliminación */}
+      <Dialog open={!!deleteId} onOpenChange={open => !open && setDeleteId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Eliminar propiedad</DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que deseas eliminar esta propiedad? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <button
+              className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
+              onClick={() => setDeleteId(null)}
+              disabled={deleting}
+            >
+              Cancelar
+            </button>
+            <button
+              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+              onClick={handleDelete}
+              disabled={deleting}
+            >
+              {deleting ? 'Eliminando...' : 'Eliminar'}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 } 

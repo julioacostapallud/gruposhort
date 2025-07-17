@@ -1,16 +1,15 @@
 'use client'
-import { Header } from "@/components/Header"
-import { Footer } from "@/components/footer"
-import { PropertiesTable } from '@/components/PropertiesTable';
-import { PropertyForm } from '@/components/PropertyForm';
-import { PropertyEditForm } from '@/components/PropertyEditForm';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Header } from '../../components/Header'
+import { Footer } from '../../components/footer'
+import { PropertiesTable } from '../../components/PropertiesTable';
+import { PropertyForm } from '../../components/PropertyForm';
+import { PropertyEditForm } from '../../components/PropertyEditForm';
 import { Plus, Filter, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { Propiedad } from '@/lib/services/propiedades';
+import { Propiedad } from '../../lib/services/propiedades';
 import { useSelector, useDispatch } from 'react-redux';
-import { RootState, AppDispatch } from '@/lib/store/store';
-import { checkAuth, logout } from '@/lib/store/authSlice';
+import { RootState, AppDispatch } from '../../lib/store/store';
+import { checkAuthStatus, logoutUser } from '../../lib/store/authSlice';
 import { useRouter } from 'next/navigation';
 
 export default function AdminPage() {
@@ -30,13 +29,14 @@ export default function AdminPage() {
   const [showNewPropertyModal, setShowNewPropertyModal] = useState(false);
   const [showEditPropertyModal, setShowEditPropertyModal] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<Propiedad | null>(null);
+  const [propertiesVersion, setPropertiesVersion] = useState(0);
 
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
-  const { isAuthenticated, user, loading } = useSelector((state: RootState) => state.auth);
+  const { isAuthenticated, user, loading } = useSelector((state: RootState) => state.auth as any);
 
   useEffect(() => {
-    dispatch(checkAuth());
+    dispatch(checkAuthStatus());
   }, [dispatch]);
 
   useEffect(() => {
@@ -46,7 +46,7 @@ export default function AdminPage() {
   }, [isAuthenticated, loading, router]);
 
   const handleLogout = async () => {
-    await dispatch(logout());
+    await dispatch(logoutUser());
     router.push('/');
   };
 
@@ -67,9 +67,7 @@ export default function AdminPage() {
     setShowNewPropertyModal(false);
     setShowEditPropertyModal(false);
     setSelectedProperty(null);
-    if (typeof window !== 'undefined') {
-      window.location.reload();
-    }
+    setPropertiesVersion(v => v + 1); // Fuerza recarga reactiva
   };
 
   const clearFilters = () => {
@@ -120,7 +118,8 @@ export default function AdminPage() {
   return (
     <main className="min-h-screen">
       <Header variant="admin" onLogout={handleLogout} />
-      {/* Hero Section única, igual que la principal pero con texto de admin */}
+      
+      {/* Hero Section - Solo HTML nativo y Tailwind */}
       <section className="relative bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-6">Gestión de Propiedades</h1>
@@ -128,7 +127,7 @@ export default function AdminPage() {
             Administra y visualiza todas las propiedades de Short Grupo Inmobiliario
           </p>
           
-          {/* Búsqueda principal - Estilo del home */}
+          {/* Búsqueda principal */}
           <div className="max-w-3xl mx-auto relative mb-8">
             <div className="flex items-center bg-white rounded-lg overflow-hidden shadow-lg">
               <input
@@ -285,16 +284,20 @@ export default function AdminPage() {
           )}
         </div>
       </section>
-      {/* Tabla de propiedades y modales debajo del hero, sin hero duplicado */}
+
+      {/* Tabla de propiedades */}
       <section className="py-16 bg-gray-50">
         <div className="container mx-auto px-4">
           <PropertiesTable
             onViewProperty={handleViewProperty}
             onEditProperty={handleEditProperty}
             onNewProperty={handleNewProperty}
+            propertiesVersion={propertiesVersion}
           />
         </div>
       </section>
+
+      {/* Botón flotante */}
       <div className="fixed bottom-6 right-6">
         <button
           onClick={handleNewProperty}
@@ -303,28 +306,46 @@ export default function AdminPage() {
           <Plus className="h-6 w-6" />
         </button>
       </div>
-      <Dialog open={showNewPropertyModal} onOpenChange={setShowNewPropertyModal}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold">Nueva Propiedad</DialogTitle>
-          </DialogHeader>
-          <PropertyForm onSuccess={handlePropertySuccess} />
-        </DialogContent>
-      </Dialog>
-      <Dialog open={showEditPropertyModal} onOpenChange={setShowEditPropertyModal}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold">Editar Propiedad</DialogTitle>
-          </DialogHeader>
-          {selectedProperty && (
+
+      {/* Modales simplificados - Solo HTML nativo */}
+      {showNewPropertyModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold">Nueva Propiedad</h2>
+              <button
+                onClick={() => setShowNewPropertyModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            <PropertyForm onSuccess={handlePropertySuccess} onCancel={() => setShowNewPropertyModal(false)} />
+          </div>
+        </div>
+      )}
+
+      {showEditPropertyModal && selectedProperty && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold">Editar Propiedad</h2>
+              <button
+                onClick={() => setShowEditPropertyModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
             <PropertyEditForm 
               property={selectedProperty} 
               onSuccess={handlePropertySuccess}
               onCancel={() => setShowEditPropertyModal(false)}
             />
-          )}
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
+
       <Footer />
     </main>
   )

@@ -233,25 +233,108 @@ export function ImageUploader({
         </Alert>
       )}
 
-      {!isMobile && (
-        <div
-          {...getRootProps()}
-          className="border border-dashed rounded p-4 text-center"
-          style={{ minHeight: 120, cursor: 'pointer' }}
-        >
-          <input {...getInputProps()} />
-          <p className="text-muted mb-0">Arrastra imágenes aquí</p>
-        </div>
-      )}
+      <div
+        className="border border-dashed rounded p-4 text-center"
+        style={{ minHeight: 120, cursor: isMobile ? 'default' : 'pointer', position: 'relative' }}
+        {...(!isMobile ? getRootProps() : {})}
+      >
+        {!isMobile && <input {...getInputProps()} />}
+        <DragDropContext onDragEnd={onDragEnd}>
+          <Droppable droppableId="images" direction="horizontal">
+            {provided => (
+              <div
+                className="flex flex-wrap gap-2 justify-start items-center mt-2"
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+                style={{ minHeight: 80 }}
+              >
+                {images.length === 0 && (
+                  <p className="text-muted mb-0 w-100" style={{ color: '#bbb' }}>
+                    {isMobile ? 'Selecciona o toma una foto' : 'Arrastra imágenes aquí'}
+                  </p>
+                )}
+                {images.map((img, idx) => (
+                  <Draggable key={img.id} draggableId={img.id} index={idx}>
+                    {prov => (
+                      <div
+                        className="position-relative"
+                        ref={prov.innerRef}
+                        {...prov.draggableProps}
+                        {...prov.dragHandleProps}
+                        style={{
+                          width: 80,
+                          height: 80,
+                          minWidth: 80,
+                          minHeight: 80,
+                          border: '1px solid #ddd',
+                          borderRadius: 4,
+                          overflow: 'hidden',
+                          ...prov.draggableProps.style
+                        }}
+                      >
+                        <Badge
+                          color={img.error ? "danger" : img.url ? "success" : "primary"}
+                          className="position-absolute top-0 start-0 m-1"
+                          style={{ fontSize: '0.7rem' }}
+                        >
+                          {idx + 1}
+                        </Badge>
+                        {img.isUploading ? (
+                          <div className="d-flex align-items-center justify-content-center w-100 h-100 bg-light">
+                            <Spinner size="sm" />
+                          </div>
+                        ) : (
+                          <img
+                            src={img.url || img.preview}
+                            alt=""
+                            className="w-100 h-100"
+                            style={{ objectFit: 'cover', cursor: 'pointer' }}
+                            onClick={() => setModalImg(img.url || img.preview)}
+                          />
+                        )}
+                        {img.error && (
+                          <div className="position-absolute bottom-0 start-0 end-0 bg-danger text-white text-center" style={{ fontSize: '10px', padding: '2px' }}>
+                            Error
+                          </div>
+                        )}
+                        <Button
+                          color="danger"
+                          size="sm"
+                          className="position-absolute top-0 end-0 m-1 p-1"
+                          onClick={() => removeImage(img.id)}
+                          style={{ width: '20px', height: '20px', padding: '2px' }}
+                        >
+                          <FaTrash size={10} />
+                        </Button>
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
+      </div>
 
-      <div className="d-flex flex-column flex-sm-row justify-content-center gap-2 gap-sm-3 my-3">
-        <Button color="secondary" onClick={() => fileInputRef.current?.click()} className="w-100 w-sm-auto">
+      <div className="flex flex-row flex-nowrap justify-center gap-2 my-3">
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="flex items-center justify-center gap-2 px-4 py-2 rounded-md bg-green-200 text-green-900 font-semibold hover:bg-green-300 transition-colors shadow-sm"
+          style={{ minWidth: 160 }}
+        >
           <FaFolderOpen className="me-1" /> Elegir archivos
-        </Button>
+        </button>
         {isMobile && (
-          <Button color="secondary" onClick={() => cameraInputRef.current?.click()} className="w-100 w-sm-auto">
+          <button
+            type="button"
+            onClick={() => cameraInputRef.current?.click()}
+            className="flex items-center justify-center gap-2 px-4 py-2 rounded-md bg-blue-200 text-blue-900 font-semibold hover:bg-blue-300 transition-colors shadow-sm"
+            style={{ minWidth: 160 }}
+          >
             <FaCamera className="me-1" /> Cámara
-          </Button>
+          </button>
         )}
       </div>
 
@@ -273,77 +356,6 @@ export function ImageUploader({
           onChange={e => onFiles(e.target.files)}
         />
       )}
-
-      <DragDropContext onDragEnd={onDragEnd}>
-        <Droppable droppableId="images" direction="horizontal">
-          {provided => (
-            <div
-              className="d-flex overflow-auto"
-              ref={provided.innerRef}
-              {...provided.droppableProps}
-            >
-              {images.map((img, idx) => (
-                <Draggable key={img.id} draggableId={img.id} index={idx}>
-                  {prov => (
-                    <div
-                      className="position-relative me-2"
-                      ref={prov.innerRef}
-                      {...prov.draggableProps}
-                      {...prov.dragHandleProps}
-                      style={{
-                        width: 80,
-                        height: 80,
-                        minWidth: 80,
-                        minHeight: 80,
-                        border: '1px solid #ddd',
-                        borderRadius: 4,
-                        overflow: 'hidden',
-                        ...prov.draggableProps.style
-                      }}
-                    >
-                      <Badge
-                        color={img.error ? "danger" : img.url ? "success" : "primary"}
-                        className="position-absolute top-0 start-0 m-1"
-                        style={{ fontSize: '0.7rem' }}
-                      >
-                        {idx + 1}
-                      </Badge>
-                      {img.isUploading ? (
-                        <div className="d-flex align-items-center justify-content-center w-100 h-100 bg-light">
-                          <Spinner size="sm" />
-                        </div>
-                      ) : (
-                        <img
-                          src={img.url || img.preview}
-                          alt=""
-                          className="w-100 h-100"
-                          style={{ objectFit: 'cover', cursor: 'pointer' }}
-                          onClick={() => setModalImg(img.url || img.preview)}
-                        />
-                      )}
-                      {img.error && (
-                        <div className="position-absolute bottom-0 start-0 end-0 bg-danger text-white text-center" style={{ fontSize: '10px', padding: '2px' }}>
-                          Error
-                        </div>
-                      )}
-                      <Button
-                        color="danger"
-                        size="sm"
-                        className="position-absolute top-0 end-0 m-1 p-1"
-                        onClick={() => removeImage(img.id)}
-                        style={{ width: '20px', height: '20px', padding: '2px' }}
-                      >
-                        <FaTrash size={10} />
-                      </Button>
-                    </div>
-                  )}
-                </Draggable>
-              ))}
-              {provided.placeholder}
-            </div>
-          )}
-        </Droppable>
-      </DragDropContext>
 
       <Modal isOpen={!!modalImg} toggle={() => setModalImg(null)} size="lg">
         <ModalHeader toggle={() => setModalImg(null)}>

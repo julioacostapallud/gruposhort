@@ -104,12 +104,31 @@ export const propiedades = {
     api.get<Propiedad>('propiedades', id),
 
   // crea y devuelve sólo el nuevo id
-  create: (data: NewPropiedad) =>
-    api.create<{ id: number }>('propiedades', data),
+  create: (data: any) => {
+    console.log('FRONTEND propiedades.create payload:', data);
+    return api.create('propiedades', {
+      ...data,
+      caracteristicas: Array.isArray(data.caracteristicas)
+        ? data.caracteristicas.map((c: any) => typeof c === 'object' ? c.id : c)
+        : [],
+      propietarios: Array.isArray(data.propietarios)
+        ? data.propietarios.map((p: any) => typeof p === 'object' ? p.id : p)
+        : [],
+    });
+  },
 
   // edita
-  update: (id: number, data: Partial<NewPropiedad>) =>
-    api.update<Propiedad>('propiedades', id, data),
+  update: (id: number, data: Partial<NewPropiedad>) => {
+    const payload: any = { ...data };
+    if (Array.isArray(data.propietarios)) {
+      payload.propietarios = data.propietarios.map((p: any) => typeof p === 'object' ? p.id : p);
+    }
+    if (Array.isArray(data.caracteristicas)) {
+      payload.caracteristicas = data.caracteristicas.map((c: any) => typeof c === 'object' ? c.id : c);
+    }
+    console.log('FRONTEND propiedades.update payload:', payload);
+    return api.update<Propiedad>('propiedades', id, payload);
+  },
 
   // borra
   remove: (id: number) =>
@@ -151,3 +170,10 @@ export const propiedades = {
   deleteImages: (propiedadId: number) =>
     api.remove('propiedades', `${propiedadId}/imagenes`),
 };
+
+// Alias para delete
+export const deletePropiedad = propiedades.remove;
+
+export const propiedadesConDelete = Object.assign(propiedades, {
+  delete: propiedades.remove
+});
