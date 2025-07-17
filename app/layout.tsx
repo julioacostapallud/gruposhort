@@ -2,6 +2,7 @@ import type React from "react"
 import "./globals.css"
 import type { Metadata } from "next"
 import { Rubik } from "next/font/google"
+import { Providers } from "@/lib/store/providers"
 
 const rubik = Rubik({
   subsets: ["latin"],
@@ -23,11 +24,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" className={rubik.variable}>
-      <body className="font-rubik">{children}</body>
+      <body className="font-rubik">
+        <Providers>
+          {children}
+        </Providers>
+      </body>
     </html>
   )
 }
-
-
-
-import './globals.css'

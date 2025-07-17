@@ -1,6 +1,4 @@
 'use client'
-import { Header } from "@/components/Header"
-import { Footer } from "@/components/footer"
 import { PropertiesTable } from '@/components/PropertiesTable';
 import { PropertyForm } from '@/components/PropertyForm';
 import { PropertyEditForm } from '@/components/PropertyEditForm';
@@ -10,45 +8,28 @@ import { useState, useEffect } from 'react';
 import { Propiedad } from '@/lib/services/propiedades';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '@/lib/store/store';
-import { checkAuth, logout } from '@/lib/store/authSlice';
-import { useRouter } from 'next/navigation';
+import { checkAuthStatus } from '@/lib/store/authSlice';
 
-export default function AdminPage() {
+export function AdminPanel() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
     tipo_propiedad: 'all',
-    estado_comercial: 'all',
-    estado_situacion: 'all',
+    estado_comercial: 'all',  estado_situacion: 'all',
     estado_registro: 'all',
-    estado_fisico: 'all',
-    min_precio: '',
-    max_precio: '',
-    min_superficie: '',
-    max_superficie: ''
-  });
+    estado_fisico: 'all',  min_precio: 0,  max_precio: '',
+    min_superficie: 0,
+    max_superficie:  });
   const [showNewPropertyModal, setShowNewPropertyModal] = useState(false);
   const [showEditPropertyModal, setShowEditPropertyModal] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<Propiedad | null>(null);
 
   const dispatch = useDispatch<AppDispatch>();
-  const router = useRouter();
   const { isAuthenticated, user, loading } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
-    dispatch(checkAuth());
+    dispatch(checkAuthStatus());
   }, [dispatch]);
-
-  useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      router.push('/');
-    }
-  }, [isAuthenticated, loading, router]);
-
-  const handleLogout = async () => {
-    await dispatch(logout());
-    router.push('/');
-  };
 
   const handleViewProperty = (property: Propiedad) => {
     setSelectedProperty(property);
@@ -79,12 +60,9 @@ export default function AdminPage() {
       estado_situacion: 'all',
       estado_registro: 'all',
       estado_fisico: 'all',
-      min_precio: '',
-      max_precio: '',
-      min_superficie: '',
-      max_superficie: ''
-    });
-    setSearchTerm('');
+      min_precio: 0,
+      max_precio: '',      min_superficie: 0,      max_superficie:  });
+    setSearchTerm(
   };
 
   const hasActiveFilters = () => {
@@ -102,28 +80,31 @@ export default function AdminPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen">
-        <div className="flex items-center justify-center h-screen">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Verificando autenticación...</p>
-          </div>
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600Verificando autenticación...</p>
         </div>
-      </main>
+      </div>
     );
   }
 
   if (!isAuthenticated) {
-    return null; // Redirigirá automáticamente
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <p className="text-gray-600>Debes iniciar sesión para acceder al panel de administración</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <main className="min-h-screen">
-      <Header variant="admin" onLogout={handleLogout} />
+    <>
       {/* Hero Section única, igual que la principal pero con texto de admin */}
       <section className="relative bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6">Gestión de Propiedades</h1>
+          <div className="container mx-auto px-4 text-center">
+          <h1 className="text-4xl md:text-5xl font-bold mb-6ión de Propiedades</h1>
           <p className="text-xl mb-8 max-w-2xl mx-auto">
             Administra y visualiza todas las propiedades de Short Grupo Inmobiliario
           </p>
@@ -131,7 +112,7 @@ export default function AdminPage() {
           {/* Búsqueda principal - Estilo del home */}
           <div className="max-w-3xl mx-auto relative mb-8">
             <div className="flex items-center bg-white rounded-lg overflow-hidden shadow-lg">
-              <input
+                <input
                 type="text"
                 placeholder="Buscar propiedades por título o descripción..."
                 value={searchTerm}
@@ -140,8 +121,7 @@ export default function AdminPage() {
               />
               <button 
                 onClick={() => setShowFilters(!showFilters)}
-                className="bg-blue-600 text-white px-6 py-4 hover:bg-blue-700 transition-colors flex items-center"
-              >
+                className="bg-blue-600 text-white px-6 py-4 hover:bg-blue-700 transition-colors flex items-center">
                 <Filter className="mr-2" size={20} />
                 <span>Filtros</span>
               </button>
@@ -151,7 +131,7 @@ export default function AdminPage() {
           {/* Filtros expandibles */}
           {showFilters && (
             <div className="max-w-4xl mx-auto">
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 border border-white/20">
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 border border-white/20">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                   <div>
                     <label className="text-sm font-medium text-white mb-2 block">Tipo de propiedad</label>
@@ -161,14 +141,14 @@ export default function AdminPage() {
                       className="w-full px-3 py-2 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-white bg-white/10 text-white placeholder-white/70"
                     >
                       <option value="all">Todos los tipos</option>
-                      <option value="1">Casa</option>
-                      <option value="2">Departamento</option>
+                      <option value="1">Apartamento</option>
+                      <option value="2">Casa</option>
                       <option value="3">Terreno</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-white mb-2 block">Estado comercial</label>
+                    <label className="text-sm font-medium text-white mb-2 block>Estado comercial</label>
                     <select 
                       value={filters.estado_comercial} 
                       onChange={(e) => setFilters({...filters, estado_comercial: e.target.value})}
@@ -182,7 +162,7 @@ export default function AdminPage() {
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-white mb-2 block">Estado situación</label>
+                    <label className="text-sm font-medium text-white mb-2 block>Estado situación</label>
                     <select 
                       value={filters.estado_situacion} 
                       onChange={(e) => setFilters({...filters, estado_situacion: e.target.value})}
@@ -203,7 +183,8 @@ export default function AdminPage() {
                       className="w-full px-3 py-2 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-white bg-white/10 text-white placeholder-white/70"
                     >
                       <option value="all">Todos los estados</option>
-                      <option value="1">Activa</option>                   <option value="2">Inactiva</option>
+                      <option value="1">Activa</option>
+                      <option value="2">Inactiva</option>
                       <option value="3">Pendiente</option>
                     </select>
                   </div>
@@ -221,8 +202,8 @@ export default function AdminPage() {
                       <option value="1">A estrenar</option>
                       <option value="2">Excelente</option>
                       <option value="3">Muy bueno</option>
-                      <option value="4">Bueno</option>
-                      <option value="5">Regular</option>
+                      <option value="4">Regular</option>
+                      <option value="5">Bueno</option>
                     </select>
                   </div>
 
@@ -249,83 +230,121 @@ export default function AdminPage() {
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-white mb-2 block">Superficie (m²)</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <input
-                        type="number"
-                        placeholder="Min"
-                        value={filters.min_superficie}
-                        onChange={(e) => setFilters({...filters, min_superficie: e.target.value})}
-                        className="w-full px-3 py-2 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-white bg-white/10 text-white placeholder-white/70"
-                      />
-                      <input
-                        type="number"
-                        placeholder="Max"
-                        value={filters.max_superficie}
-                        onChange={(e) => setFilters({...filters, max_superficie: e.target.value})}
-                        className="w-full px-3 py-2 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-white bg-white/10 text-white placeholder-white/70"
-                      />
-                    </div>
+                    <label className="text-sm font-medium text-white mb-2 block">Superficie mínima</label>
+                    <input
+                      type="number"
+                      placeholder="0 m²"
+                      value={filters.min_superficie}
+                      onChange={(e) => setFilters({...filters, min_superficie: e.target.value})}
+                      className="w-full px-3 py-2 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-white bg-white/10 text-white placeholder-white/70"
+                    />
                   </div>
                 </div>
 
-                {hasActiveFilters() && (
-                  <div className="mt-4 text-center">
-                    <button
-                      onClick={clearFilters}
-                      className="bg-white/20 text-white px-4 py-2 rounded-md hover:bg-white/30 transition-colors flex items-center gap-2 mx-auto"
-                    >
-                      <X className="h-4 w-4" />
-                      Limpiar Filtros
-                    </button>
+                <div className="flex justify-between items-center mt-4">
+                  <button
+                    onClick={clearFilters}
+                    className="text-white/80 hover:text-white text-sm flex items-center"
+                  >
+                    <X className="mr-1" size={16} />
+                    Limpiar filtros
+                  </button>
+                  <div className="text-sm text-white/80">
+                   {hasActiveFilters() && 'Filtros activos'}
                   </div>
-                )}
+                </div>
               </div>
             </div>
           )}
         </div>
       </section>
-      {/* Tabla de propiedades y modales debajo del hero, sin hero duplicado */}
-      <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <PropertiesTable
-            onViewProperty={handleViewProperty}
-            onEditProperty={handleEditProperty}
-            onNewProperty={handleNewProperty}
-          />
-        </div>
-      </section>
-      <div className="fixed bottom-6 right-6">
-        <button
-          onClick={handleNewProperty}
-          className="bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="h-6 w-6" />
-        </button>
-      </div>
+
+      {/* PropertiesTable */}
+      <PropertiesTable 
+        onViewProperty={handleViewProperty}
+        onEditProperty={handleEditProperty}
+        onNewProperty={handleNewProperty}
+      />
+
+      {/* Modales */}
       <Dialog open={showNewPropertyModal} onOpenChange={setShowNewPropertyModal}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold">Nueva Propiedad</DialogTitle>
+            <DialogTitle>Nueva Propiedad</DialogTitle>
           </DialogHeader>
           <PropertyForm onSuccess={handlePropertySuccess} />
         </DialogContent>
       </Dialog>
+
       <Dialog open={showEditPropertyModal} onOpenChange={setShowEditPropertyModal}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold">Editar Propiedad</DialogTitle>
+            <DialogTitle>Editar Propiedad</DialogTitle>
           </DialogHeader>
           {selectedProperty && (
             <PropertyEditForm 
               property={selectedProperty} 
-              onSuccess={handlePropertySuccess}
-              onCancel={() => setShowEditPropertyModal(false)}
+              onSuccess={handlePropertySuccess} 
             />
           )}
         </DialogContent>
       </Dialog>
-      <Footer />
-    </main>
-  )
+
+      <Dialog open={!!selectedProperty && !showEditPropertyModal} onOpenChange={() => setSelectedProperty(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Detalles de la Propiedad</DialogTitle>
+          </DialogHeader>
+          {selectedProperty && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">{selectedProperty.titulo}</h3>
+                  <p className="text-gray-600">{selectedProperty.descripcion}</p>
+                  <div className="space-y-2">
+                    <p><strong>Precio:</strong>{selectedProperty.moneda.simbolo} {Number(selectedProperty.precio).toLocaleString()}</p>
+                    <p><strong>Superficie:</strong>{selectedProperty.superficie_m2} m²</p>
+                    <p><strong>Dormitorios:</strong>{selectedProperty.dormitorios}</p>
+                    <p><strong>Baños:</strong> {selectedProperty.banos}</p>
+                  </div>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-2">Estados</h4>
+                  <div className="space-y-1">
+                    <p><strong>Tipo:</strong>{selectedProperty.tipo_propiedad.nombre}</p>
+                    <p><strong>Comercial:</strong> {selectedProperty.estado_comercial.nombre}</p>
+                    <p><strong>Situación:</strong> {selectedProperty.estado_situacion.nombre}</p>
+                    <p><strong>Registro:</strong> {selectedProperty.estado_registro.nombre}</p>
+                    <p><strong>Físico:</strong> {selectedProperty.estado_fisico.nombre}</p>
+                  </div>
+                </div>
+              </div>
+              {selectedProperty.direccion && (
+                <div>
+                  <h4 className="font-semibold mb-2">Dirección</h4>
+                  <p>{selectedProperty.direccion.calle}{selectedProperty.direccion.numero}</p>
+                  <p>{selectedProperty.direccion.ciudad},{selectedProperty.direccion.provincia}</p>
+                  <p>CP:{selectedProperty.direccion.codigo_postal}</p>
+                </div>
+              )}
+              {selectedProperty.propietarios.length > 0 && (
+                <div>
+                  <h4 className="font-semibold mb-2">Propietarios</h4>
+                  <div className="space-y-1">
+                    {selectedProperty.propietarios.map((propietario) => (
+                      <p key={propietario.id}>
+                        {propietario.nombre_completo}
+                        {propietario.email && ` - ${propietario.email}`}
+                        {propietario.telefono && ` - ${propietario.telefono}`}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
+  );
 } 

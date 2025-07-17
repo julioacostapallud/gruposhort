@@ -1,4 +1,6 @@
+'use client'
 import NextImage from "next/image"
+import { Header } from "@/components/Header"
 import { SearchBar } from "@/components/search-bar"
 import { CategorySection } from "@/components/category-section"
 import { PropertyCard } from "@/components/property-card"
@@ -6,43 +8,69 @@ import { BoostSection } from "@/components/boost-section"
 import { ExploreSection } from "@/components/explore-section"
 import { TrendsSection } from "@/components/trends-section"
 import { Footer } from "@/components/footer"
+import { LoginModal } from "@/components/LoginModal"
+import { propiedades, Propiedad } from "@/lib/services/propiedades"   // ← importa tu servicio
+import { useEffect, useState } from "react"
+import { useSelector } from "react-redux"
+import { RootState } from "@/lib/store/store"
+import { AdminPanel } from "@/components/AdminPanel"
 
 export default function Home() {
+  const [propiedadesList, setPropiedadesList] = useState<Propiedad[]>([])
+  const [showLoginModal, setShowLoginModal] = useState(false)
+  const [isAdminMode, setIsAdminMode] = useState(false)
   
+  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth)
+  
+  useEffect(() => {
+    propiedades
+      .list()
+      .then(data => {
+        console.log("Propiedades:", data)
+        setPropiedadesList(data)
+      })
+      .catch(err => console.error("Error al cargar propiedades:", err))
+  }, [])
+
+  const handleToggleAdmin = () => {
+    setIsAdminMode(!isAdminMode)
+  }
+
+  const handleLogout = () => {
+    setIsAdminMode(false)
+  }
+
+  // Si está en modo admin, mostrar solo el panel de administración
+  if (isAdminMode) {
+    return (
+      <main className="min-h-screen">
+        <Header 
+          variant="admin"
+          onLogout={handleLogout}
+          onToggleAdmin={handleToggleAdmin}
+          isAdminMode={isAdminMode}
+        />
+        <AdminPanel />
+      </main>
+    )
+  }
+
+  // Vista normal de la página principal
   return (
     <main className="min-h-screen">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white shadow-sm">
-        <div className="container mx-auto flex items-center justify-between p-4">
-          <div className="flex items-center">
-            <NextImage src="/logo.png" alt="Short Grupo Inmobiliario" width={50} height={50} className="mr-2" />
-            <div className="hidden md:block">
-              <h1 className="text-lg font-bold text-blue-600">Short</h1>
-              <p className="text-xs text-gray-600">Grupo Inmobiliario - Desarrollos Comerciales</p>
-            </div>
-          </div>
-          <nav className="hidden md:flex items-center space-x-6">
-            <a href="#" className="text-gray-700 hover:text-blue-600 transition-colors">
-              Comprar
-            </a>
-            <a href="#" className="text-gray-700 hover:text-blue-600 transition-colors">
-              Alquilar
-            </a>
-            <a href="#" className="text-gray-700 hover:text-blue-600 transition-colors">
-              Vender
-            </a>
-            <a href="#" className="text-gray-700 hover:text-blue-600 transition-colors">
-              Explorar
-            </a>
-            <a href="#" className="text-gray-700 hover:text-blue-600 transition-colors">
-              Noticias
-            </a>
-          </nav>
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
-            Iniciar Sesión
-          </button>
-        </div>
-      </header>
+      <Header 
+        variant="main"
+        onLoginClick={() => setShowLoginModal(true)}
+        onToggleAdmin={handleToggleAdmin}
+        isAdminMode={isAdminMode}
+      />
+
+      {/* Login Modal */}
+      <LoginModal 
+        isOpen={showLoginModal} 
+        onClose={() => setShowLoginModal(false)} 
+      />
 
       {/* Hero Section */}
       <section className="relative bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
@@ -64,7 +92,21 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold mb-8 text-center">Propiedades Recientes</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <PropertyCard
+          {propiedadesList.map((p) => (
+              <PropertyCard
+                key={p.id}
+                image={p.imagenes[0] ?? '/property1.jpg'}
+                price={`${p.moneda.simbolo} ${Number(p.precio).toLocaleString()}`}
+                beds={p.dormitorios ?? 0}
+                baths={p.banos ?? 0}
+                sqft={`${p.superficie_m2 ?? 0} m²`}
+                address={`${p.direccion?.calle ?? ''} ${p.direccion?.numero ?? ''}`}
+                city={`${p.direccion?.ciudad ?? ''}, ${p.direccion?.provincia ?? ''}`}
+                status={p.estado_situacion.nombre}
+                daysAgo={1}
+              />
+            ))}
+            {/* <PropertyCard
               image="/property1.jpg"
               price="$45,000,000"
               beds={3}
@@ -96,7 +138,7 @@ export default function Home() {
               city="Resistencia, Chaco"
               status="Nuevo en el Mercado"
               daysAgo={1}
-            />
+            /> */}
           </div>
           <div className="text-center mt-10">
             <button className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition-colors">
