@@ -1,5 +1,5 @@
 // lib/services/apiClient.ts
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, '') ?? ''
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, '') ?? 'https://short-backend-five.vercel.app'
 
 export const api = {
   list: async <T = any>(endpoint: string): Promise<T> => {
