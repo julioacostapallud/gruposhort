@@ -24,14 +24,18 @@ class CloudinaryService {
   }
 
   // Subir una imagen a Cloudinary a través del backend
-  async uploadImage(file: File): Promise<{ url: string; public_id: string }> {
+  async uploadImage(file: File, propiedadId?: number): Promise<{ url: string; public_id: string }> {
     console.log('Subiendo imagen a través del backend:', {
       fileName: file.name,
-      fileSize: file.size
+      fileSize: file.size,
+      propiedadId
     });
 
     const formData = new FormData();
     formData.append('file', file);
+    if (propiedadId) {
+      formData.append('propiedad_id', String(propiedadId));
+    }
 
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/upload`, {

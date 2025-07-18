@@ -75,7 +75,7 @@ export default function Home() {
           {propiedadesList.map((p) => (
               <PropertyCard
                 key={p.id}
-                image={p.imagenes[0] ?? '/property1.jpg'}
+                image={typeof p.imagenes[0] === 'string' ? p.imagenes[0] : p.imagenes[0]?.url ?? '/property1.jpg'}
                 price={`${p.moneda.simbolo} ${Number(p.precio).toLocaleString()}`}
                 beds={p.dormitorios ?? 0}
                 baths={p.banos ?? 0}

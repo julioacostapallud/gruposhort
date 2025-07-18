@@ -233,23 +233,16 @@ export function PropertiesTable({ onViewProperty, onEditProperty, onNewProperty,
                   <Trash2 className="h-5 w-5 text-red-600" />
                 </button>
                 {/* Imagen principal */}
-                <div className="relative">
+                <div className="relative h-48">
                   {property.imagenes && property.imagenes.length > 0 ? (
-                    <NextImage
-                      src={property.imagenes[0]}
+                    <img
+                      src={typeof property.imagenes[0] === 'string' ? property.imagenes[0] : (property.imagenes[0] as any)?.url}
                       alt={property.titulo}
-                      width={500}
-                      height={300}
-                      className="w-full h-64 object-cover"
+                      className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-64 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                      <div className="text-center text-gray-400">
-                        <div className="w-16 h-16 bg-gray-300 rounded-full flex items-center justify-center mx-auto mb-3">
-                          <Building2 className="h-8 w-8" />
-                        </div>
-                        <p className="text-sm font-medium">Sin imagen</p>
-                      </div>
+                    <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400">
+                      <span>Sin imagen</span>
                     </div>
                   )}
                   

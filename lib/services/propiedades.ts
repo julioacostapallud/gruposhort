@@ -31,7 +31,7 @@ export interface Propiedad {
   moneda: Moneda;
   fecha_publicacion: string;
   fecha_actualizacion: string;
-  imagenes: string[];
+  imagenes: string[] | Array<{ url: string; public_id?: string }>;
   caracteristicas: Catalogo[];
   propietarios: Array<{
     id: number;

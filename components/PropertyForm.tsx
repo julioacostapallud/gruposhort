@@ -410,7 +410,7 @@ export function PropertyForm({ onSuccess, onCancel }: PropertyFormProps) {
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Imágenes
           </label>
-          <ImageUploader onImagesChange={setUploadedImages} />
+          <ImageUploader onImagesChange={setUploadedImages} isEditMode={false} />
         </div>
 
         <div className="flex items-end gap-2">

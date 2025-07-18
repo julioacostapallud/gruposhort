@@ -33,13 +33,18 @@ type ImageItem = {
 export function ImageUploader({ 
   onChangeFiles, 
   onImagesChange,
-  existingImages = []
+  existingImages = [],
+  isEditMode = false,
+  propiedadId
 }: { 
   onChangeFiles?: (files: File[]) => void;
   onImagesChange?: (images: Array<{ url: string; public_id: string }>) => void;
   existingImages?: Array<{ url: string; public_id?: string }>;
+  isEditMode?: boolean;
+  propiedadId?: number;
 }) {
   const [images, setImages] = useState<ImageItem[]>([])
+  const [imagesToDelete, setImagesToDelete] = useState<Array<{ url: string; public_id: string }>>([])
   const [modalImg, setModalImg] = useState<string | null>(null)
   const [isMobile, setIsMobile] = useState(false)
   const [cloudinaryError, setCloudinaryError] = useState<string | null>(null)
@@ -51,19 +56,45 @@ export function ImageUploader({
     setIsMobile(/Mobi|Android/i.test(navigator.userAgent))
   }, [])
 
+  // Cerrar modal con Escape
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && modalImg) {
+        setModalImg(null)
+      }
+    }
+    
+    if (modalImg) {
+      document.addEventListener('keydown', handleEscape)
+      return () => document.removeEventListener('keydown', handleEscape)
+    }
+  }, [modalImg])
+
   // Cargar imágenes existentes al inicializar
   useEffect(() => {
     if (existingImages.length > 0) {
       const existingImageItems: ImageItem[] = existingImages.map((img, index) => ({
         id: `existing-${index}`,
         url: img.url,
-        public_id: img.public_id || `existing-${index}`,
+        public_id: img.public_id, // Usa el public_id real
         preview: img.url,
         isUploading: false
       }))
       setImages(existingImageItems)
+    } else {
+      setImages([])
     }
-  }, [existingImages])
+  }, [JSON.stringify(existingImages)]) // Usar JSON.stringify para comparar el contenido del array
+
+  // Función para obtener las imágenes marcadas para eliminar (para el componente padre)
+  const getImagesToDelete = useCallback(() => {
+    return imagesToDelete
+  }, [imagesToDelete])
+
+  // Función para limpiar las imágenes marcadas para eliminar (después de guardar)
+  const clearImagesToDelete = useCallback(() => {
+    setImagesToDelete([])
+  }, [])
 
   // Función para notificar al componente padre sobre las imágenes subidas
   const notifyParent = useCallback((currentImages: ImageItem[]) => {
@@ -73,18 +104,13 @@ export function ImageUploader({
     onImagesChange?.(uploadedImages)
   }, [onImagesChange])
 
-  // Notificar al padre cuando cambien las imágenes
-  useEffect(() => {
-    const uploadedImages = images
-      .filter(img => img.url && img.public_id && !img.isUploading && !img.error)
-      .map(img => ({ url: img.url!, public_id: img.public_id! }))
-    onImagesChange?.(uploadedImages)
-  }, [images, onImagesChange])
+  // Notificar al padre cuando cambien las imágenes - eliminado para evitar bucles infinitos
+  // La notificación se hace a través de notifyParent en los lugares apropiados
 
   const uploadToCloudinary = async (file: File): Promise<{ url: string; public_id: string }> => {
     try {
       console.log('Intentando subir a Cloudinary:', file.name)
-      const result = await cloudinaryService.uploadImage(file)
+      const result = await cloudinaryService.uploadImage(file, propiedadId)
       console.log('Subida exitosa a Cloudinary:', result)
       return result
     } catch (error) {
@@ -211,17 +237,51 @@ export function ImageUploader({
   const removeImage = async (id: string) => {
     const imageToRemove = images.find(img => img.id === id)
     
-    if (imageToRemove?.public_id) {
-      try {
-        await cloudinaryService.deleteImage(imageToRemove.public_id)
-        console.log('Imagen eliminada de Cloudinary:', imageToRemove.public_id)
-      } catch (error) {
-        console.error('Error eliminando imagen de Cloudinary:', error)
+    if (!imageToRemove) return
+    
+    if (isEditMode) {
+      // En modo edición: solo marcar para eliminar, no eliminar inmediatamente
+      if (imageToRemove.public_id && !imageToRemove.public_id.startsWith('existing-')) {
+        setImagesToDelete(prev => [...prev, { 
+          url: imageToRemove.url || imageToRemove.preview, 
+          public_id: imageToRemove.public_id! 
+        }])
+        console.log('Imagen marcada para eliminar en modo edición:', imageToRemove.public_id)
+      }
+    } else {
+      // En modo alta: eliminar inmediatamente de Cloudinary
+      if (imageToRemove.public_id && !imageToRemove.public_id.startsWith('existing-')) {
+        try {
+          console.log('Eliminando imagen de Cloudinary:', imageToRemove.public_id)
+          await cloudinaryService.deleteImage(imageToRemove.public_id)
+          console.log('Imagen eliminada exitosamente de Cloudinary:', imageToRemove.public_id)
+        } catch (error) {
+          console.error('Error eliminando imagen de Cloudinary:', error)
+          // Aún así eliminamos del estado local para no bloquear la UI
+        }
       }
     }
     
+    // Limpiar URL del objeto si existe
+    if (imageToRemove.preview && imageToRemove.preview.startsWith('blob:')) {
+      URL.revokeObjectURL(imageToRemove.preview)
+    }
+    
+    // Eliminar del estado local
     setImages(prev => prev.filter(img => img.id !== id))
+    
+    console.log('Imagen eliminada del estado local:', id)
   }
+
+  // Exponer funciones para el componente padre
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).ImageUploaderRef = {
+        getImagesToDelete,
+        clearImagesToDelete
+      }
+    }
+  }, [getImagesToDelete, clearImagesToDelete])
 
   return (
     <>
@@ -230,6 +290,13 @@ export function ImageUploader({
           <strong>Advertencia:</strong> {cloudinaryError}
           <br />
           <small>Las imágenes se mostrarán localmente pero no se guardarán en la nube.</small>
+        </Alert>
+      )}
+
+      {isEditMode && imagesToDelete.length > 0 && (
+        <Alert color="info" className="mb-3">
+          <strong>Modo edición:</strong> {imagesToDelete.length} imagen(es) marcada(s) para eliminar. 
+          Se eliminarán de Cloudinary solo cuando guardes los cambios.
         </Alert>
       )}
 
@@ -243,10 +310,15 @@ export function ImageUploader({
           <Droppable droppableId="images" direction="horizontal">
             {provided => (
               <div
-                className="flex flex-wrap gap-2 justify-start items-center mt-2"
                 ref={provided.innerRef}
                 {...provided.droppableProps}
-                style={{ minHeight: 80 }}
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 8,
+                  alignItems: 'flex-start',
+                  minHeight: 80,
+                }}
               >
                 {images.length === 0 && (
                   <p className="text-muted mb-0 w-100" style={{ color: '#bbb' }}>
@@ -262,23 +334,76 @@ export function ImageUploader({
                         {...prov.draggableProps}
                         {...prov.dragHandleProps}
                         style={{
+                          position: 'relative',
                           width: 80,
                           height: 80,
                           minWidth: 80,
                           minHeight: 80,
                           border: '1px solid #ddd',
-                          borderRadius: 4,
+                          borderRadius: 8,
                           overflow: 'hidden',
+                          background: '#fff',
+                          boxSizing: 'border-box',
+                          flex: '0 0 auto',
+                          display: 'block',
                           ...prov.draggableProps.style
                         }}
                       >
-                        <Badge
-                          color={img.error ? "danger" : img.url ? "success" : "primary"}
-                          className="position-absolute top-0 start-0 m-1"
-                          style={{ fontSize: '0.7rem' }}
+                        {/* Overlay superior para trash y número */}
+                        <div
+                          style={{
+                            position: 'absolute',
+                            top: 4,
+                            left: 0,
+                            width: '100%',
+                            display: 'flex',
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            zIndex: 2,
+                            pointerEvents: 'none',
+                            padding: '0 4px',
+                          }}
                         >
-                          {idx + 1}
-                        </Badge>
+                          {/* Número a la izquierda */}
+                          <span
+                            style={{
+                              fontSize: '0.8rem',
+                              fontWeight: 600,
+                              background: 'rgba(255,255,255,0.85)',
+                              color: '#222',
+                              borderRadius: 8,
+                              padding: '0 7px',
+                              pointerEvents: 'auto',
+                            }}
+                          >
+                            {idx + 1}
+                          </span>
+                          {/* Trash a la derecha */}
+                          <span
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeImage(img.id);
+                            }}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              width: 20,
+                              height: 20,
+                              borderRadius: '50%',
+                              background: '#dc3545',
+                              border: '2px solid #fff',
+                              cursor: 'pointer',
+                              boxShadow: '0 1px 4px rgba(220,53,69,0.3)',
+                              transition: 'background 0.2s',
+                              pointerEvents: 'auto',
+                            }}
+                            title={isEditMode ? "Marcar para eliminar" : "Eliminar imagen"}
+                          >
+                            <FaTrash size={11} color="white" />
+                          </span>
+                        </div>
                         {img.isUploading ? (
                           <div className="d-flex align-items-center justify-content-center w-100 h-100 bg-light">
                             <Spinner size="sm" />
@@ -293,19 +418,10 @@ export function ImageUploader({
                           />
                         )}
                         {img.error && (
-                          <div className="position-absolute bottom-0 start-0 end-0 bg-danger text-white text-center" style={{ fontSize: '10px', padding: '2px' }}>
+                          <div className="position-absolute bottom-0 start-0 end-0 bg-danger text-white text-center" style={{ fontSize: '10px', padding: '2px', zIndex: 2 }}>
                             Error
                           </div>
                         )}
-                        <Button
-                          color="danger"
-                          size="sm"
-                          className="position-absolute top-0 end-0 m-1 p-1"
-                          onClick={() => removeImage(img.id)}
-                          style={{ width: '20px', height: '20px', padding: '2px' }}
-                        >
-                          <FaTrash size={10} />
-                        </Button>
                       </div>
                     )}
                   </Draggable>
@@ -357,20 +473,75 @@ export function ImageUploader({
         />
       )}
 
-      <Modal isOpen={!!modalImg} toggle={() => setModalImg(null)} size="lg">
-        <ModalHeader toggle={() => setModalImg(null)}>
-          Vista previa
-        </ModalHeader>
-        <ModalBody className="text-center p-0">
-          {modalImg && (
+      {modalImg && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.9)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '20px'
+          }}
+          onClick={() => setModalImg(null)}
+        >
+          <div 
+            style={{
+              position: 'relative',
+              maxWidth: '90vw',
+              maxHeight: '90vh',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Button
+              color="light"
+              size="sm"
+              onClick={() => setModalImg(null)}
+              className="p-1 border-0 position-absolute"
+              style={{ 
+                width: '40px', 
+                height: '40px', 
+                borderRadius: '50%',
+                fontSize: '20px',
+                fontWeight: 'bold',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: '#ffffff',
+                borderColor: '#ffffff',
+                color: '#000000',
+                position: 'absolute',
+                top: '-50px',
+                right: '0px',
+                zIndex: 10000,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+              }}
+            >
+              ×
+            </Button>
             <img
               src={modalImg}
               alt="Preview"
-              style={{ maxWidth: '100%', maxHeight: '80vh' }}
+              style={{ 
+                maxWidth: '100%', 
+                maxHeight: '100%',
+                objectFit: 'contain',
+                borderRadius: '8px',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.5)'
+              }}
             />
-          )}
-        </ModalBody>
-      </Modal>
+          </div>
+        </div>
+      )}
     </>
   )
 }
+

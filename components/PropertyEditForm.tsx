@@ -42,10 +42,7 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
   const [geoError, setGeoError] = useState<string | null>(null);
 
   // Memoizar existingImages para evitar ciclos infinitos en ImageUploader
-  const memoizedExistingImages = useMemo(
-    () => property.imagenes.map(url => ({ url })),
-    [property.imagenes]
-  )
+  const memoizedExistingImages = useMemo(() => property.imagenes, [property.imagenes])
 
   const [form, setForm] = useState({
     titulo: property.titulo,
@@ -67,9 +64,7 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
     calle: property.direccion?.calle || '',
     numero: property.direccion?.numero || '',
     piso: property.direccion?.piso || '',
-    departamento: property.direccion?.departamento || '',
-    latitud: property.direccion?.latitud || '',
-    longitud: property.direccion?.longitud || ''
+    departamento: property.direccion?.departamento || ''
   })
 
   // Precarga ciudades si hay provincia inicial (por nombre)
@@ -139,6 +134,9 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
     setSaving(true)
     
     try {
+      // Obtener las imágenes marcadas para eliminar
+      const imagesToDelete = (window as any).ImageUploaderRef?.getImagesToDelete() || []
+      
       await propiedades.update(property.id, {
         tipo_propiedad_id: form.tipo_propiedad_id,
         estado_comercial_id: form.estado_comercial_id,
@@ -160,13 +158,54 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
         calle: form.calle || undefined,
         numero: form.numero || undefined,
         piso: form.piso || undefined,
-        departamento: form.departamento || undefined,
-        latitud: form.latitud || undefined,
-        longitud: form.longitud || undefined
+        departamento: form.departamento || undefined
       })
       
-      if (uploadedImages.length > 0) {
-        await propiedades.updateImages(property.id, uploadedImages)
+      // Manejar imágenes: eliminar las marcadas y agregar las nuevas
+      if (imagesToDelete.length > 0 || uploadedImages.length > 0) {
+        try {
+          // 1. Eliminar imágenes marcadas para eliminar de Cloudinary
+          const { cloudinaryService } = await import('@/lib/services/cloudinary')
+          for (const image of imagesToDelete) {
+            try {
+              await cloudinaryService.deleteImage(image.public_id)
+              console.log('Imagen eliminada de Cloudinary:', image.public_id)
+            } catch (error) {
+              console.error('Error eliminando imagen de Cloudinary:', image.public_id, error)
+              // Continuar con las demás imágenes
+            }
+          }
+          
+          // 2. Preparar la lista final de imágenes para la base de datos
+          // Obtener las imágenes existentes que NO están marcadas para eliminar
+          const existingImagesNotDeleted = Array.isArray(property.imagenes) 
+            ? property.imagenes
+                .map(img => typeof img === 'string' ? { url: img } : img)
+                .filter(img => !imagesToDelete.some((toDelete: any) => toDelete.public_id === img.public_id))
+            : []
+          
+          // Combinar imágenes existentes (no eliminadas) + nuevas imágenes
+          const finalImages = [...existingImagesNotDeleted, ...uploadedImages]
+          
+          // 3. Actualizar imágenes en la base de datos
+          try {
+            await propiedades.updateImages(property.id, finalImages)
+            console.log('Imágenes actualizadas en la base de datos:', finalImages.length)
+          } catch (error) {
+            console.error('Error actualizando imágenes en BD:', error)
+            throw new Error('Error al actualizar imágenes en la base de datos')
+          }
+          
+          // 4. Limpiar la lista de imágenes marcadas para eliminar
+          (window as any).ImageUploaderRef?.clearImagesToDelete()
+        } catch (error) {
+          console.error('Error manejando imágenes:', error)
+          toast({ 
+            title: 'Error al actualizar imágenes', 
+            description: 'La propiedad se actualizó pero hubo problemas con las imágenes.', 
+            variant: 'destructive'
+          })
+        }
       }
       
       toast({ title: 'Propiedad actualizada correctamente', description: '', })
@@ -432,7 +471,9 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
             </label>
             <ImageUploader 
               onImagesChange={setUploadedImages} 
-              existingImages={memoizedExistingImages}
+              existingImages={Array.isArray(property.imagenes) ? property.imagenes.map(img => typeof img === 'string' ? { url: img } : img) : []}
+              isEditMode={true}
+              propiedadId={property.id}
             />
           </div>
           {/* 5. Propietarios */}
@@ -549,22 +590,7 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
               />
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="latitud" className="block text-sm font-medium text-gray-700 mb-2">Latitud</label>
-              <input id="latitud" type="text" value={form.latitud} readOnly className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100" />
-            </div>
-            <div>
-              <label htmlFor="longitud" className="block text-sm font-medium text-gray-700 mb-2">Longitud</label>
-              <input id="longitud" type="text" value={form.longitud} readOnly className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100" />
-            </div>
-            <div className="col-span-2 flex items-center gap-2 mt-2">
-              <button type="button" onClick={handleGeolocalizar} className="px-3 py-2 bg-blue-600 text-white rounded shadow disabled:opacity-50" disabled={geoLoading}>
-                {geoLoading ? 'Obteniendo ubicación...' : 'Geolocalizar'}
-              </button>
-              {geoError && <span className="text-red-600 text-sm ml-2">{geoError}</span>}
-            </div>
-          </div>
+          {/* Eliminar inputs de latitud y longitud y el botón de geolocalizar */}
           <div className="flex justify-end space-x-4">
             <button 
               type="button"
