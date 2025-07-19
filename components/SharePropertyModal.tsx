@@ -21,14 +21,14 @@ export function SharePropertyModal({ property, isOpen, onClose }: SharePropertyM
   // Generar la URL SEO friendly
   const propertyUrl = `${window.location.origin}/propiedad/${generatePropertySlug({
     tipo: property.tipo_propiedad.nombre,
-    dormitorios: property.dormitorios,
-    barrio: property.direccion?.barrio,
-    ciudad: property.direccion?.ciudad,
+    dormitorios: property.dormitorios || undefined,
+    barrio: property.direccion?.barrio || undefined,
+    ciudad: property.direccion?.ciudad || undefined,
     id: property.id
   })}`
 
-  // Generar mensaje para compartir
-  const shareMessage = `¡Mira esta propiedad! ${property.titulo} - ${property.precio} en ${property.direccion?.barrio || property.direccion?.ciudad}`
+  // Generar mensaje para compartir con información real
+  const shareMessage = `¡Mira esta propiedad! ${property.titulo} - ${property.precio} ${property.moneda?.simbolo} en ${property.direccion?.barrio || property.direccion?.ciudad}`
 
   const shareOptions = [
     {

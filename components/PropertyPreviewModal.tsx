@@ -494,22 +494,22 @@ export function PropertyPreviewModal({
                         </button>
                         <div className="grid grid-cols-2 gap-2">
                           <a 
-                            href="https://wa.me/5493624727330" 
+                            href={`https://wa.me/5493624727330?text=${encodeURIComponent(`¡Hola! Me interesa esta propiedad: ${property.titulo} - ${formatPrice(property.precio, property.moneda)} en ${property.direccion?.barrio || property.direccion?.ciudad}. ¿Podrían enviarme más información?`)}`}
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="bg-green-500 text-white py-2 px-4 rounded-lg font-medium hover:bg-green-600 transition-colors flex items-center justify-center"
                           >
                             <MessageCircle className="h-4 w-4 mr-2" />
-                            WhatsApp
+                            Consultar por WhatsApp
                           </a>
                           <a 
-                            href="https://t.me/3624727330" 
+                            href={`https://t.me/3624727330?text=${encodeURIComponent(`¡Hola! Me interesa esta propiedad: ${property.titulo} - ${formatPrice(property.precio, property.moneda)} en ${property.direccion?.barrio || property.direccion?.ciudad}. ¿Más información?`)}`}
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="bg-blue-500 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-600 transition-colors flex items-center justify-center"
                           >
                             <MessageCircle className="h-4 w-4 mr-2" />
-                            Telegram
+                            Consultar por Telegram
                           </a>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
