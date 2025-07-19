@@ -43,8 +43,19 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
     // Buscar la propiedad por ID
     const property = await propiedades.get(propertyId)
     
-    // Si la propiedad no existe o no está activa, mostrar página de error
-    if (!property || property.estado_registro?.nombre !== 'Activo') {
+    // Debug: mostrar información de la propiedad
+    console.log('Property found:', property)
+    console.log('Estado registro:', property?.estado_registro)
+    console.log('Estado registro nombre:', property?.estado_registro?.nombre)
+    
+    // Si la propiedad no existe, mostrar página de error
+    if (!property) {
+      return <PropertyNotFound propertyId={propertyId} />
+    }
+    
+    // Si la propiedad no está activa, mostrar página de error
+    if (property.estado_registro?.nombre !== 'Activo') {
+      console.log('Property not active, estado:', property.estado_registro?.nombre)
       return <PropertyNotFound propertyId={propertyId} />
     }
 
