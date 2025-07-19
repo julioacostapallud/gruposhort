@@ -6,7 +6,7 @@ import NextImage from "next/image"
 
 export function BoostSection() {
   return (
-    <section className="py-16 bg-blue-600 text-white">
+    <section className="py-16 bg-primary text-white">
       <div className="container mx-auto px-4">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <motion.div
@@ -64,8 +64,8 @@ export function BoostSection() {
             viewport={{ once: true }}
           >
             <div className="relative">
-              <div className="absolute -top-6 -left-6 w-64 h-64 bg-blue-500 rounded-lg"></div>
-              <div className="absolute -bottom-6 -right-6 w-64 h-64 bg-blue-700 rounded-lg"></div>
+              <div className="absolute -top-6 -left-6 w-64 h-64 bg-primary rounded-lg"></div>
+              <div className="absolute -bottom-6 -right-6 w-64 h-64 bg-primary/80 rounded-lg"></div>
               <div className="relative bg-white rounded-lg overflow-hidden shadow-xl">
                 <NextImage
                   src="/boost-image.jpg"

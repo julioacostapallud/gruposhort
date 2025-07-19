@@ -24,7 +24,13 @@ export default function AdminPage() {
     min_precio: '',
     max_precio: '',
     min_superficie: '',
-    max_superficie: ''
+    max_superficie: '',
+    min_ancho: '',
+    max_ancho: '',
+    min_largo: '',
+    max_largo: '',
+    max_antiguedad: '',
+    min_dormitorios: ''
   });
   const [showNewPropertyModal, setShowNewPropertyModal] = useState(false);
   const [showEditPropertyModal, setShowEditPropertyModal] = useState(false);
@@ -80,7 +86,13 @@ export default function AdminPage() {
       min_precio: '',
       max_precio: '',
       min_superficie: '',
-      max_superficie: ''
+      max_superficie: '',
+      min_ancho: '',
+      max_ancho: '',
+      min_largo: '',
+      max_largo: '',
+      max_antiguedad: '',
+      min_dormitorios: ''
     });
     setSearchTerm('');
   };
@@ -265,6 +277,70 @@ export default function AdminPage() {
                         className="w-full px-3 py-2 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-white bg-white/10 text-white placeholder-white/70"
                       />
                     </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-white mb-2 block">Ancho (m)</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="number"
+                        placeholder="Min"
+                        value={filters.min_ancho || ''}
+                        onChange={(e) => setFilters({...filters, min_ancho: e.target.value})}
+                        className="w-full px-3 py-2 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-white bg-white/10 text-white placeholder-white/70"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Max"
+                        value={filters.max_ancho || ''}
+                        onChange={(e) => setFilters({...filters, max_ancho: e.target.value})}
+                        className="w-full px-3 py-2 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-white bg-white/10 text-white placeholder-white/70"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-white mb-2 block">Largo (m)</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="number"
+                        placeholder="Min"
+                        value={filters.min_largo || ''}
+                        onChange={(e) => setFilters({...filters, min_largo: e.target.value})}
+                        className="w-full px-3 py-2 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-white bg-white/10 text-white placeholder-white/70"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Max"
+                        value={filters.max_largo || ''}
+                        onChange={(e) => setFilters({...filters, max_largo: e.target.value})}
+                        className="w-full px-3 py-2 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-white bg-white/10 text-white placeholder-white/70"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-white mb-2 block">Antigüedad (años)</label>
+                    <input
+                      type="number"
+                      placeholder="Máximo"
+                      value={filters.max_antiguedad || ''}
+                      onChange={(e) => setFilters({...filters, max_antiguedad: e.target.value})}
+                      className="w-full px-3 py-2 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-white bg-white/10 text-white placeholder-white/70"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-white mb-2 block">Dormitorios</label>
+                    <input
+                      type="number"
+                      placeholder="Mínimo"
+                      value={filters.min_dormitorios || ''}
+                      onChange={(e) => setFilters({...filters, min_dormitorios: e.target.value})}
+                      className="w-full px-3 py-2 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-white bg-white/10 text-white placeholder-white/70"
+                    />
                   </div>
                 </div>
 

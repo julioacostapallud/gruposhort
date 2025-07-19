@@ -203,6 +203,9 @@ export function AdminPanel() {
                   <div className="space-y-2">
                     <p><strong>Precio:</strong> {selectedProperty.moneda.simbolo} {Number(selectedProperty.precio).toLocaleString()}</p>
                     <p><strong>Superficie:</strong> {selectedProperty.superficie_m2} m²</p>
+                    {selectedProperty.ancho_m && <p><strong>Ancho:</strong> {selectedProperty.ancho_m} m</p>}
+                    {selectedProperty.largo_m && <p><strong>Largo:</strong> {selectedProperty.largo_m} m</p>}
+                    {selectedProperty.antiguedad && <p><strong>Antigüedad:</strong> {selectedProperty.antiguedad} años</p>}
                     <p><strong>Dormitorios:</strong> {selectedProperty.dormitorios}</p>
                     <p><strong>Baños:</strong> {selectedProperty.banos}</p>
                   </div>
@@ -222,7 +225,7 @@ export function AdminPanel() {
                 <div>
                   <h4 className="font-semibold mb-2">Dirección</h4>
                   <p>{selectedProperty.direccion.calle} {selectedProperty.direccion.numero}</p>
-                  <p>{selectedProperty.direccion.ciudad}, {selectedProperty.direccion.provincia}</p>
+                  <p>{selectedProperty.direccion.ciudad}, {selectedProperty.direccion.provincia}{selectedProperty.direccion.barrio ? ` - ${selectedProperty.direccion.barrio}` : ''}</p>
                   <p>CP: {selectedProperty.direccion.codigo_postal}</p>
                 </div>
               )}

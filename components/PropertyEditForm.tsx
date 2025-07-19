@@ -32,6 +32,7 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
   const [owners, setOwners] = useState<Owner[]>([])
   const [provincias, setProvincias] = useState<Cat[]>([])
   const [ciudades, setCiudades] = useState<Cat[]>([])
+  const [barrios, setBarrios] = useState<Cat[]>([])
   const [uploadedImages, setUploadedImages] = useState<Array<{ url: string; public_id: string }>>([])
   const [showOwnerModal, setShowOwnerModal] = useState(false);
   const [newOwner, setNewOwner] = useState({ nombre_completo: '', tipo_documento_id: '', numero_documento: '', email: '', telefono: '' });
@@ -49,6 +50,9 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
     descripcion: property.descripcion || '',
     precio: parseFloat(property.precio),
     superficie_m2: property.superficie_m2 ? parseFloat(property.superficie_m2) : 0,
+    ancho_m: property.ancho_m ? parseFloat(property.ancho_m) : 0,
+    largo_m: property.largo_m ? parseFloat(property.largo_m) : 0,
+    antiguedad: property.antiguedad || 0,
     dormitorios: property.dormitorios || 0,
     banos: property.banos || 0,
     tipo_propiedad_id: property.tipo_propiedad.id,
@@ -61,10 +65,13 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
     propietarios: property.propietarios ? property.propietarios.map(p => p.id) : [],
     provincia_id: 0, // se setea luego en el useEffect
     ciudad_id: 0,    // se setea luego en el useEffect
+    barrio_id: 0,    // se setea luego en el useEffect
     calle: property.direccion?.calle || '',
     numero: property.direccion?.numero || '',
     piso: property.direccion?.piso || '',
-    departamento: property.direccion?.departamento || ''
+    departamento: property.direccion?.departamento || '',
+    latitud: property.direccion?.latitud || '',
+    longitud: property.direccion?.longitud || ''
   })
 
   // Precarga ciudades si hay provincia inicial (por nombre)
@@ -80,6 +87,17 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
       })
     }
   }, [property.direccion?.provincia])
+
+  // Cargar barrios cuando cambie la ciudad
+  useEffect(() => {
+    if (form.ciudad_id) {
+      api.list<Cat[]>(`barrios?ciudad_id=${form.ciudad_id}`)
+         .then(setBarrios)
+         .catch(() => setBarrios([])) // Si no hay endpoint específico, usar el genérico
+    } else {
+      setBarrios([])
+    }
+  }, [form.ciudad_id])
 
   useEffect(() => {
     Promise.all([
@@ -125,6 +143,41 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Validación de campos obligatorios
+    if (!form.tipo_propiedad_id || form.tipo_propiedad_id === 0) {
+      setFormError('Debe seleccionar un tipo de propiedad.');
+      return;
+    }
+    if (!form.estado_comercial_id || form.estado_comercial_id === 0) {
+      setFormError('Debe seleccionar un estado comercial.');
+      return;
+    }
+    if (!form.estado_situacion_id || form.estado_situacion_id === 0) {
+      setFormError('Debe seleccionar un estado de situación.');
+      return;
+    }
+    if (!form.estado_registro_id || form.estado_registro_id === 0) {
+      setFormError('Debe seleccionar un estado de registro.');
+      return;
+    }
+    if (!form.estado_fisico_id || form.estado_fisico_id === 0) {
+      setFormError('Debe seleccionar un estado físico.');
+      return;
+    }
+    if (!form.id_moneda || form.id_moneda === 0) {
+      setFormError('Debe seleccionar una moneda.');
+      return;
+    }
+    if (!form.titulo.trim()) {
+      setFormError('El título es obligatorio.');
+      return;
+    }
+    if (!form.precio || form.precio <= 0) {
+      setFormError('El precio debe ser mayor a 0.');
+      return;
+    }
+    
     // Validación de dirección obligatoria
     if (!form.provincia_id || !form.ciudad_id || !form.calle.trim() || !form.numero.trim()) {
       setFormError('La dirección (provincia, ciudad, calle y número) es obligatoria.');
@@ -147,6 +200,9 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
         descripcion: form.descripcion,
         precio: form.precio,
         superficie_m2: form.superficie_m2 || undefined,
+        ancho_m: form.ancho_m || undefined,
+        largo_m: form.largo_m || undefined,
+        antiguedad: form.antiguedad || undefined,
         dormitorios: form.dormitorios || undefined,
         banos: form.banos || undefined,
         direccion_id: property.direccion?.id,
@@ -155,16 +211,25 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
         propietarios: Array.isArray(form.propietarios) ? form.propietarios.map(id => ({ id })) : [],
         provincia_id: form.provincia_id || undefined,
         ciudad_id: form.ciudad_id || undefined,
+        barrio_id: form.barrio_id || undefined,
         calle: form.calle || undefined,
         numero: form.numero || undefined,
         piso: form.piso || undefined,
-        departamento: form.departamento || undefined
+        departamento: form.departamento || undefined,
+        latitud: form.latitud || undefined,
+        longitud: form.longitud || undefined
       })
       
-      // Manejar imágenes: eliminar las marcadas y agregar las nuevas
-      if (imagesToDelete.length > 0 || uploadedImages.length > 0) {
-        try {
-          // 1. Eliminar imágenes marcadas para eliminar de Cloudinary
+      // Manejar imágenes: obtener el estado completo del ImageUploader
+      try {
+        // Obtener las imágenes marcadas para eliminar
+        const imagesToDelete = (window as any).ImageUploaderRef?.getImagesToDelete() || []
+        
+        console.log('Imágenes a eliminar:', imagesToDelete)
+        console.log('Imágenes nuevas:', uploadedImages)
+        
+        // 1. Eliminar imágenes marcadas para eliminar de Cloudinary
+        if (imagesToDelete.length > 0) {
           const { cloudinaryService } = await import('@/lib/services/cloudinary')
           for (const image of imagesToDelete) {
             try {
@@ -175,37 +240,28 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
               // Continuar con las demás imágenes
             }
           }
-          
-          // 2. Preparar la lista final de imágenes para la base de datos
-          // Obtener las imágenes existentes que NO están marcadas para eliminar
-          const existingImagesNotDeleted = Array.isArray(property.imagenes) 
-            ? property.imagenes
-                .map(img => typeof img === 'string' ? { url: img } : img)
-                .filter(img => !imagesToDelete.some((toDelete: any) => toDelete.public_id === img.public_id))
-            : []
-          
-          // Combinar imágenes existentes (no eliminadas) + nuevas imágenes
-          const finalImages = [...existingImagesNotDeleted, ...uploadedImages]
-          
-          // 3. Actualizar imágenes en la base de datos
-          try {
-            await propiedades.updateImages(property.id, finalImages)
-            console.log('Imágenes actualizadas en la base de datos:', finalImages.length)
-          } catch (error) {
-            console.error('Error actualizando imágenes en BD:', error)
-            throw new Error('Error al actualizar imágenes en la base de datos')
-          }
-          
-          // 4. Limpiar la lista de imágenes marcadas para eliminar
-          (window as any).ImageUploaderRef?.clearImagesToDelete()
-        } catch (error) {
-          console.error('Error manejando imágenes:', error)
-          toast({ 
-            title: 'Error al actualizar imágenes', 
-            description: 'La propiedad se actualizó pero hubo problemas con las imágenes.', 
-            variant: 'destructive'
-          })
         }
+        
+        // 2. Actualizar imágenes en la base de datos
+        // uploadedImages contiene TODAS las imágenes que deben estar en la BD
+        // (existentes no eliminadas + nuevas)
+        try {
+          await propiedades.updateImages(property.id, uploadedImages)
+          console.log('Imágenes actualizadas en la base de datos:', uploadedImages.length)
+        } catch (error) {
+          console.error('Error actualizando imágenes en BD:', error)
+          throw new Error('Error al actualizar imágenes en la base de datos')
+        }
+        
+        // 3. Limpiar la lista de imágenes marcadas para eliminar
+        (window as any).ImageUploaderRef?.clearImagesToDelete()
+      } catch (error) {
+        console.error('Error manejando imágenes:', error)
+        toast({ 
+          title: 'Error al actualizar imágenes', 
+          description: 'La propiedad se actualizó pero hubo problemas con las imágenes.', 
+          variant: 'destructive'
+        })
       }
       
       toast({ title: 'Propiedad actualizada correctamente', description: '', })
@@ -297,7 +353,7 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
             <div>
               <label htmlFor="superficie" className="block text-sm font-medium text-gray-700 mb-2">
                 Superficie (m²)
@@ -308,6 +364,47 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
                 min={0}
                 value={form.superficie_m2}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, superficie_m2: +e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label htmlFor="ancho" className="block text-sm font-medium text-gray-700 mb-2">
+                Ancho (m)
+              </label>
+              <input
+                id="ancho"
+                type="number"
+                min={0}
+                step={0.1}
+                value={form.ancho_m}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, ancho_m: +e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label htmlFor="largo" className="block text-sm font-medium text-gray-700 mb-2">
+                Largo (m)
+              </label>
+              <input
+                id="largo"
+                type="number"
+                min={0}
+                step={0.1}
+                value={form.largo_m}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, largo_m: +e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label htmlFor="antiguedad" className="block text-sm font-medium text-gray-700 mb-2">
+                Antigüedad (años)
+              </label>
+              <input
+                id="antiguedad"
+                type="number"
+                min={0}
+                value={form.antiguedad}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, antiguedad: +e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
@@ -501,7 +598,7 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
             </div>
           </div>
           {/* 6. Dirección */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div>
               <label htmlFor="provincia" className="block text-sm font-medium text-gray-700 mb-2">
                 Provincia
@@ -534,6 +631,23 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
                 <option value={0}>Seleccionar ciudad</option>
                 {ciudades.map(ciudad => (
                   <option key={ciudad.id} value={ciudad.id}>{ciudad.nombre}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="barrio" className="block text-sm font-medium text-gray-700 mb-2">
+                Barrio
+              </label>
+              <select
+                id="barrio"
+                value={form.barrio_id}
+                onChange={e => setForm({ ...form, barrio_id: +e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                disabled={!form.ciudad_id}
+              >
+                <option value={0}>Seleccionar barrio</option>
+                {barrios.map(barrio => (
+                  <option key={barrio.id} value={barrio.id}>{barrio.nombre}</option>
                 ))}
               </select>
             </div>
@@ -590,7 +704,44 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
               />
             </div>
           </div>
-          {/* Eliminar inputs de latitud y longitud y el botón de geolocalizar */}
+          {/* 7. Geolocalización */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label htmlFor="latitud" className="block text-sm font-medium text-gray-700 mb-2">Latitud</label>
+              <input 
+                id="latitud" 
+                type="text" 
+                value={form.latitud} 
+                readOnly 
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100" 
+              />
+            </div>
+            <div>
+              <label htmlFor="longitud" className="block text-sm font-medium text-gray-700 mb-2">Longitud</label>
+              <input 
+                id="longitud" 
+                type="text" 
+                value={form.longitud} 
+                readOnly 
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100" 
+              />
+            </div>
+            <div className="flex items-end">
+              <button 
+                type="button" 
+                onClick={handleGeolocalizar} 
+                className="w-full px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50" 
+                disabled={geoLoading}
+              >
+                {geoLoading ? 'Obteniendo ubicación...' : 'Geolocalizar'}
+              </button>
+            </div>
+          </div>
+          {geoError && (
+            <div className="text-red-600 text-sm bg-red-50 p-3 rounded-md border border-red-200">
+              {geoError}
+            </div>
+          )}
           <div className="flex justify-end space-x-4">
             <button 
               type="button"
@@ -665,4 +816,4 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
       </Dialog>
     </>
   )
-} 
+}

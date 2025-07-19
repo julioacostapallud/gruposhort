@@ -20,13 +20,15 @@ import {
   AlertCircle,
   X,
   SlidersHorizontal,
-  Trash2
+  Trash2,
+  Calendar
 } from 'lucide-react'
 import { Propiedad } from '@/lib/services/propiedades'
 import { propiedadesConDelete as propiedades } from '@/lib/services/propiedades'
 import NextImage from "next/image"
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from './ui/dialog'
 import { useToast } from '@/hooks/use-toast'
+import { PropertyPreviewModal } from './PropertyPreviewModal'
 
 interface PropertiesTableProps {
   onViewProperty: (property: Propiedad) => void
@@ -54,6 +56,8 @@ export function PropertiesTable({ onViewProperty, onEditProperty, onNewProperty,
   const { toast } = useToast();
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [previewProperty, setPreviewProperty] = useState<Propiedad | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
     loadProperties()
@@ -185,7 +189,7 @@ export function PropertiesTable({ onViewProperty, onEditProperty, onNewProperty,
     return (
       <div className="flex items-center justify-center py-16">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-gray-600 text-lg">Cargando propiedades...</p>
         </div>
       </div>
@@ -288,6 +292,24 @@ export function PropertiesTable({ onViewProperty, onEditProperty, onNewProperty,
                         <span>{property.superficie_m2} m²</span>
                       </div>
                     )}
+                    {property.ancho_m && (
+                      <div className="flex items-center text-gray-600 bg-gray-100 rounded px-2 py-1 text-xs">
+                        <Ruler className="h-4 w-4 mr-1" />
+                        <span>{property.ancho_m} m ancho</span>
+                      </div>
+                    )}
+                    {property.largo_m && (
+                      <div className="flex items-center text-gray-600 bg-gray-100 rounded px-2 py-1 text-xs">
+                        <Ruler className="h-4 w-4 mr-1" />
+                        <span>{property.largo_m} m largo</span>
+                      </div>
+                    )}
+                    {property.antiguedad && (
+                      <div className="flex items-center text-gray-600 bg-gray-100 rounded px-2 py-1 text-xs">
+                        <Calendar className="h-4 w-4 mr-1" />
+                        <span>{property.antiguedad} años</span>
+                      </div>
+                    )}
                     {property.dormitorios && (
                       <div className="flex items-center text-gray-600 bg-gray-100 rounded px-2 py-1 text-xs">
                         <Bed className="h-4 w-4 mr-1" />
@@ -313,7 +335,7 @@ export function PropertiesTable({ onViewProperty, onEditProperty, onNewProperty,
                   {property.direccion && (
                     <div className="flex items-center gap-2 mb-2 text-sm text-gray-600">
                       <MapPin className="h-4 w-4" />
-                      <span>{property.direccion.ciudad}, {property.direccion.provincia}</span>
+                      <span>{property.direccion.ciudad}, {property.direccion.provincia}{property.direccion.barrio ? ` - ${property.direccion.barrio}` : ''}</span>
                     </div>
                   )}
 
@@ -349,11 +371,14 @@ export function PropertiesTable({ onViewProperty, onEditProperty, onNewProperty,
                   {/* Botones de acción */}
                   <div className="flex gap-2">
                     <button
-                      onClick={() => onViewProperty(property)}
+                      onClick={() => {
+                        setPreviewProperty(property);
+                        setShowPreview(true);
+                      }}
                       className="flex-1 bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"
                     >
                       <Eye className="h-4 w-4" />
-                      Ver
+                      Preview
                     </button>
                     <button
                       onClick={() => onEditProperty(property)}
@@ -396,6 +421,17 @@ export function PropertiesTable({ onViewProperty, onEditProperty, onNewProperty,
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Property Preview Modal */}
+      <PropertyPreviewModal
+        property={previewProperty}
+        isOpen={showPreview}
+        onClose={() => {
+          setShowPreview(false);
+          setPreviewProperty(null);
+        }}
+        isAdminMode={true}
+      />
     </div>
   )
 } 

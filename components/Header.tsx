@@ -33,18 +33,12 @@ export function Header({
   const isAdmin = user?.rol === 'administrador'
 
   return (
-    <header className="sticky top-0 z-50 bg-white shadow-sm">
-      <div className="container mx-auto flex items-center justify-between p-4">
-        <div className="flex items-center">
-          <NextImage src="/logo.png" alt="Short Grupo Inmobiliario" width={50} height={50} className="mr-2" />
-          <div className="hidden md:block">
-            <h1 className="text-lg font-bold text-blue-600">Short</h1>
-            <p className="text-xs text-gray-600">
-              {isAdminMode
-                ? 'Panel de Administración - Gestión de Propiedades'
-                : 'Grupo Inmobiliario - Desarrollos Comerciales'}
-            </p>
-          </div>
+    <header className="sticky top-0 z-50 bg-white shadow-sm w-full">
+      <div className="flex items-center justify-between p-4 w-full">
+        <div className="flex items-center flex-shrink-0">
+          <a href="/">
+            <img src="/Logo.svg" alt="Short Grupo Inmobiliario" className="h-14 w-auto" />
+          </a>
         </div>
 
         <div className="flex items-center space-x-4">

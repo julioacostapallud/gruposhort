@@ -33,6 +33,7 @@ export function PropertyForm({ onSuccess, onCancel }: PropertyFormProps) {
   const [owners, setOwners] = useState<Owner[]>([])
   const [provincias, setProvincias] = useState<Cat[]>([])
   const [ciudades, setCiudades] = useState<Cat[]>([])
+  const [barrios, setBarrios] = useState<Cat[]>([])
   const [uploadedImages, setUploadedImages] = useState<Array<{ url: string; public_id: string }>>([])
   const [showOwnerModal, setShowOwnerModal] = useState(false);
   const [newOwner, setNewOwner] = useState({ nombre_completo: '', tipo_documento_id: '', numero_documento: '', email: '', telefono: '' });
@@ -47,6 +48,9 @@ export function PropertyForm({ onSuccess, onCancel }: PropertyFormProps) {
     descripcion: '',
     precio: 0,
     superficie_m2: 0,
+    ancho_m: 0,
+    largo_m: 0,
+    antiguedad: 0,
     dormitorios: 0,
     banos: 0,
     tipo_propiedad_id: 0,
@@ -59,6 +63,7 @@ export function PropertyForm({ onSuccess, onCancel }: PropertyFormProps) {
     propietarios: [] as number[],
     provincia_id: 0,
     ciudad_id: 0,
+    barrio_id: 0,
     calle: '',
     numero: '',
     piso: '',
@@ -98,8 +103,54 @@ export function PropertyForm({ onSuccess, onCancel }: PropertyFormProps) {
     }
   }, [form.provincia_id])
 
+  useEffect(() => {
+    if (form.ciudad_id) {
+      api.list<Cat[]>(`barrios?ciudad_id=${form.ciudad_id}`)
+         .then(setBarrios)
+         .catch(() => setBarrios([])) // Si no hay endpoint específico, usar el genérico
+    } else {
+      setBarrios([])
+    }
+    setForm(f => ({ ...f, barrio_id: 0 })) // Reset barrio cuando cambia ciudad
+  }, [form.ciudad_id])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Validación de campos obligatorios
+    if (!form.tipo_propiedad_id || form.tipo_propiedad_id === 0) {
+      setFormError('Debe seleccionar un tipo de propiedad.');
+      return;
+    }
+    if (!form.estado_comercial_id || form.estado_comercial_id === 0) {
+      setFormError('Debe seleccionar un estado comercial.');
+      return;
+    }
+    if (!form.estado_situacion_id || form.estado_situacion_id === 0) {
+      setFormError('Debe seleccionar un estado de situación.');
+      return;
+    }
+    if (!form.estado_registro_id || form.estado_registro_id === 0) {
+      setFormError('Debe seleccionar un estado de registro.');
+      return;
+    }
+    if (!form.estado_fisico_id || form.estado_fisico_id === 0) {
+      setFormError('Debe seleccionar un estado físico.');
+      return;
+    }
+    if (!form.id_moneda || form.id_moneda === 0) {
+      setFormError('Debe seleccionar una moneda.');
+      return;
+    }
+    if (!form.titulo.trim()) {
+      setFormError('El título es obligatorio.');
+      return;
+    }
+    if (!form.precio || form.precio <= 0) {
+      setFormError('El precio debe ser mayor a 0.');
+      return;
+    }
+    
     // Validación de dirección obligatoria
     if (!form.provincia_id || !form.ciudad_id || !form.calle.trim() || !form.numero.trim()) {
       setFormError('La dirección (provincia, ciudad, calle y número) es obligatoria.');
@@ -117,6 +168,9 @@ export function PropertyForm({ onSuccess, onCancel }: PropertyFormProps) {
         descripcion: form.descripcion,
         precio: form.precio,
         superficie_m2: form.superficie_m2 || undefined,
+        ancho_m: form.ancho_m || undefined,
+        largo_m: form.largo_m || undefined,
+        antiguedad: form.antiguedad || undefined,
         dormitorios: form.dormitorios || undefined,
         banos: form.banos || undefined,
         id_moneda: form.id_moneda,
@@ -124,6 +178,7 @@ export function PropertyForm({ onSuccess, onCancel }: PropertyFormProps) {
         propietarios: form.propietarios, // array de IDs
         provincia_id: form.provincia_id || undefined,
         ciudad_id: form.ciudad_id || undefined,
+        barrio_id: form.barrio_id || undefined,
         calle: form.calle || undefined,
         numero: form.numero || undefined,
         piso: form.piso || undefined,
@@ -137,7 +192,7 @@ export function PropertyForm({ onSuccess, onCancel }: PropertyFormProps) {
       toast({ title: 'Propiedad creada correctamente', description: '', })
       onSuccess?.()
     } catch (err) {
-      toast({ title: 'Error al crear la propiedad', description: err?.message || '', })
+      toast({ title: 'Error al crear la propiedad', description: (err as any)?.message || String(err), })
     }
   }
 
@@ -230,7 +285,7 @@ export function PropertyForm({ onSuccess, onCancel }: PropertyFormProps) {
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
           <div>
             <label htmlFor="superficie" className="block text-sm font-medium text-gray-700 mb-2">
               Superficie (m²)
@@ -241,6 +296,50 @@ export function PropertyForm({ onSuccess, onCancel }: PropertyFormProps) {
               min={0}
               value={form.superficie_m2}
               onChange={e => setForm({ ...form, superficie_m2: +e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="ancho" className="block text-sm font-medium text-gray-700 mb-2">
+              Ancho (m)
+            </label>
+            <input
+              id="ancho"
+              type="number"
+              min={0}
+              step={0.1}
+              value={form.ancho_m}
+              onChange={e => setForm({ ...form, ancho_m: +e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="largo" className="block text-sm font-medium text-gray-700 mb-2">
+              Largo (m)
+            </label>
+            <input
+              id="largo"
+              type="number"
+              min={0}
+              step={0.1}
+              value={form.largo_m}
+              onChange={e => setForm({ ...form, largo_m: +e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="antiguedad" className="block text-sm font-medium text-gray-700 mb-2">
+              Antigüedad (años)
+            </label>
+            <input
+              id="antiguedad"
+              type="number"
+              min={0}
+              value={form.antiguedad}
+              onChange={e => setForm({ ...form, antiguedad: +e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
@@ -436,7 +535,7 @@ export function PropertyForm({ onSuccess, onCancel }: PropertyFormProps) {
         </div>
 
         {/* Dirección completa */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div>
             <label htmlFor="provincia" className="block text-sm font-medium text-gray-700 mb-2">
               Provincia
@@ -473,6 +572,23 @@ export function PropertyForm({ onSuccess, onCancel }: PropertyFormProps) {
             </select>
           </div>
           <div>
+            <label htmlFor="barrio" className="block text-sm font-medium text-gray-700 mb-2">
+              Barrio
+            </label>
+            <select
+              id="barrio"
+              value={form.barrio_id}
+              onChange={e => setForm({ ...form, barrio_id: +e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              disabled={!form.ciudad_id}
+            >
+              <option value={0}>Seleccionar barrio</option>
+              {barrios.map(barrio => (
+                <option key={barrio.id} value={barrio.id}>{barrio.nombre}</option>
+              ))}
+            </select>
+          </div>
+          <div>
             <label htmlFor="calle" className="block text-sm font-medium text-gray-700 mb-2">
               Calle
             </label>
@@ -484,20 +600,6 @@ export function PropertyForm({ onSuccess, onCancel }: PropertyFormProps) {
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
-          </div>
-          <div>
-            <label htmlFor="latitud" className="block text-sm font-medium text-gray-700 mb-2">Latitud</label>
-            <input id="latitud" type="text" value={form.latitud} readOnly className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100" />
-          </div>
-          <div>
-            <label htmlFor="longitud" className="block text-sm font-medium text-gray-700 mb-2">Longitud</label>
-            <input id="longitud" type="text" value={form.longitud} readOnly className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100" />
-          </div>
-          <div className="col-span-2 flex items-center gap-2 mt-2">
-            <button type="button" onClick={handleGeolocalizar} className="px-3 py-2 bg-blue-600 text-white rounded shadow disabled:opacity-50" disabled={geoLoading}>
-              {geoLoading ? 'Obteniendo ubicación...' : 'Geolocalizar'}
-            </button>
-            {geoError && <span className="text-red-600 text-sm ml-2">{geoError}</span>}
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -539,6 +641,44 @@ export function PropertyForm({ onSuccess, onCancel }: PropertyFormProps) {
             />
           </div>
         </div>
+        {/* Geolocalización */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div>
+            <label htmlFor="latitud" className="block text-sm font-medium text-gray-700 mb-2">Latitud</label>
+            <input 
+              id="latitud" 
+              type="text" 
+              value={form.latitud} 
+              readOnly 
+              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100" 
+            />
+          </div>
+          <div>
+            <label htmlFor="longitud" className="block text-sm font-medium text-gray-700 mb-2">Longitud</label>
+            <input 
+              id="longitud" 
+              type="text" 
+              value={form.longitud} 
+              readOnly 
+              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100" 
+            />
+          </div>
+          <div className="flex items-end">
+            <button 
+              type="button" 
+              onClick={handleGeolocalizar} 
+              className="w-full px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50" 
+              disabled={geoLoading}
+            >
+              {geoLoading ? 'Obteniendo ubicación...' : 'Geolocalizar'}
+            </button>
+          </div>
+        </div>
+        {geoError && (
+          <div className="text-red-600 text-sm bg-red-50 p-3 rounded-md border border-red-200">
+            {geoError}
+          </div>
+        )}
 
         {formError && <div className="text-red-600 font-semibold mb-2">{formError}</div>}
 
@@ -593,7 +733,7 @@ export function PropertyForm({ onSuccess, onCancel }: PropertyFormProps) {
             <select
               required
               value={newOwner.tipo_documento_id}
-              onChange={e => setNewOwner({ ...newOwner, tipo_documento_id: Number(e.target.value) })}
+              onChange={e => setNewOwner({ ...newOwner, tipo_documento_id: e.target.value })}
               className="w-full px-3 py-2 border rounded"
             >
               <option value="">Tipo de documento</option>

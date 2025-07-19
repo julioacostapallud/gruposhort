@@ -14,16 +14,18 @@ interface PropertyCardProps {
   city: string
   status: string
   daysAgo: number
+  onClick?: () => void
 }
 
-export function PropertyCard({ image, price, beds, baths, sqft, address, city, status, daysAgo }: PropertyCardProps) {
+export function PropertyCard({ image, price, beds, baths, sqft, address, city, status, daysAgo, onClick }: PropertyCardProps) {
   return (
     <motion.div
-      className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow"
+      className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow cursor-pointer"
       whileHover={{ y: -5 }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
+      onClick={onClick}
     >
       <div className="relative">
         <NextImage
@@ -33,7 +35,7 @@ export function PropertyCard({ image, price, beds, baths, sqft, address, city, s
           height={300}
           className="w-full h-64 object-cover"
         />
-        <div className="absolute top-4 left-4 bg-blue-600 text-white px-3 py-1 rounded-md text-sm">{status}</div>
+        <div className="absolute top-4 left-4 bg-primary text-white px-3 py-1 rounded-md text-sm">{status}</div>
         <div className="absolute top-4 right-4 bg-white text-gray-800 px-3 py-1 rounded-md text-sm">
           {daysAgo === 1 ? "Hace 1 día" : `Hace ${daysAgo} días`}
         </div>

@@ -70,6 +70,17 @@ export function ImageUploader({
     }
   }, [modalImg])
 
+  // Función para notificar al componente padre sobre las imágenes subidas
+  const notifyParent = useCallback((currentImages: ImageItem[]) => {
+    const uploadedImages = currentImages
+      .filter(img => img.url && !img.isUploading && !img.error)
+      .map(img => ({ 
+        url: img.url!, 
+        public_id: img.public_id || `existing-${img.id}` // Usar public_id real o generar uno para existentes
+      }))
+    onImagesChange?.(uploadedImages)
+  }, [onImagesChange])
+
   // Cargar imágenes existentes al inicializar
   useEffect(() => {
     if (existingImages.length > 0) {
@@ -81,10 +92,14 @@ export function ImageUploader({
         isUploading: false
       }))
       setImages(existingImageItems)
+      // Notificar al padre sobre las imágenes existentes
+      notifyParent(existingImageItems)
     } else {
       setImages([])
+      // Notificar al padre que no hay imágenes
+      onImagesChange?.([])
     }
-  }, [JSON.stringify(existingImages)]) // Usar JSON.stringify para comparar el contenido del array
+  }, [JSON.stringify(existingImages), notifyParent, onImagesChange]) // Usar JSON.stringify para comparar el contenido del array
 
   // Función para obtener las imágenes marcadas para eliminar (para el componente padre)
   const getImagesToDelete = useCallback(() => {
@@ -95,14 +110,6 @@ export function ImageUploader({
   const clearImagesToDelete = useCallback(() => {
     setImagesToDelete([])
   }, [])
-
-  // Función para notificar al componente padre sobre las imágenes subidas
-  const notifyParent = useCallback((currentImages: ImageItem[]) => {
-    const uploadedImages = currentImages
-      .filter(img => img.url && img.public_id && !img.isUploading && !img.error)
-      .map(img => ({ url: img.url!, public_id: img.public_id! }))
-    onImagesChange?.(uploadedImages)
-  }, [onImagesChange])
 
   // Notificar al padre cuando cambien las imágenes - eliminado para evitar bucles infinitos
   // La notificación se hace a través de notifyParent en los lugares apropiados
@@ -135,7 +142,11 @@ export function ImageUploader({
       }
       
       // Agregar la imagen inmediatamente para mostrar preview
-      setImages(prev => [...prev, tempItem])
+      setImages(prev => {
+        const updated = [...prev, tempItem]
+        notifyParent(updated)
+        return updated
+      })
       
       // Intentar subir a Cloudinary en segundo plano
       try {
@@ -147,11 +158,15 @@ export function ImageUploader({
         
         const { url, public_id } = await uploadToCloudinary(file)
         
-        setImages(prev => prev.map(img => 
-          img.id === tempId 
-            ? { ...img, url, public_id, isUploading: false }
-            : img
-        ))
+        setImages(prev => {
+          const updated = prev.map(img => 
+            img.id === tempId 
+              ? { ...img, url, public_id, isUploading: false }
+              : img
+          )
+          notifyParent(updated)
+          return updated
+        })
         
         setCloudinaryError(null) // Limpiar errores previos
       } catch (error) {
@@ -267,8 +282,12 @@ export function ImageUploader({
       URL.revokeObjectURL(imageToRemove.preview)
     }
     
-    // Eliminar del estado local
-    setImages(prev => prev.filter(img => img.id !== id))
+    // Eliminar del estado local y notificar al padre
+    setImages(prev => {
+      const updated = prev.filter(img => img.id !== id)
+      notifyParent(updated)
+      return updated
+    })
     
     console.log('Imagen eliminada del estado local:', id)
   }

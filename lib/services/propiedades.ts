@@ -3,7 +3,19 @@ import { api } from './apiClient';
 
 export interface Catalogo { id: number; nombre: string; }
 export interface Moneda { id: number; nombre: string; codigo_iso: string; simbolo: string; }
-export interface Direccion { /* define según lo que devuelve tu backend */ }
+export interface Direccion { 
+  id: number;
+  calle: string;
+  numero: string;
+  piso: string | null;
+  departamento: string | null;
+  barrio: string | null;
+  ciudad: string;
+  provincia: string;
+  codigo_postal: string;
+  latitud?: string;
+  longitud?: string;
+}
 
 export interface Propiedad {
   id: number;
@@ -16,18 +28,12 @@ export interface Propiedad {
   descripcion: string | null;
   precio: string;
   superficie_m2: string | null;
+  ancho_m: string | null;
+  largo_m: string | null;
+  antiguedad: number | null;
   dormitorios: number | null;
   banos: number | null;
-  direccion: {
-    id: number;
-    calle: string;
-    numero: string;
-    piso: string | null;
-    departamento: string | null;
-    ciudad: string;
-    provincia: string;
-    codigo_postal: string;
-  } | null;
+  direccion: Direccion | null;
   moneda: Moneda;
   fecha_publicacion: string;
   fecha_actualizacion: string;
@@ -51,6 +57,9 @@ export interface NewPropiedad {
   descripcion?: string;
   precio: number;
   superficie_m2?: number;
+  ancho_m?: number;
+  largo_m?: number;
+  antiguedad?: number;
   dormitorios?: number;
   banos?: number;
   direccion_id?: number;
@@ -60,10 +69,13 @@ export interface NewPropiedad {
   // Campos de dirección completa
   provincia_id?: number;
   ciudad_id?: number;
+  barrio_id?: number;
   calle?: string;
   numero?: string;
   piso?: string;
   departamento?: string;
+  latitud?: string;
+  longitud?: string;
 }
 
 type FilterProps = {
@@ -76,6 +88,11 @@ type FilterProps = {
   max_precio?: number;
   min_superficie?: number;
   max_superficie?: number;
+  min_ancho?: number;
+  max_ancho?: number;
+  min_largo?: number;
+  max_largo?: number;
+  max_antiguedad?: number;
   page?: number;
   per_page?: number;
   caracteristicas?: number[];
