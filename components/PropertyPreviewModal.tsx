@@ -25,16 +25,16 @@ import {
   Map,
   Info,
   Tag,
-  Instagram,
-  Facebook,
   MessageCircle
 } from 'lucide-react'
+import { WhatsAppIcon, TelegramIcon, InstagramIcon, FacebookIcon } from './ui/social-icons'
 import NextImage from 'next/image'
 import { Propiedad } from '@/lib/services/propiedades'
 import { getGoogleMapsEmbedUrl } from '@/lib/config/maps'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { PropertyPreviewModalMobile } from './PropertyPreviewModalMobile'
 import { SharePropertyModal } from './SharePropertyModal'
+import { generatePropertyUrl } from '@/lib/utils'
 
 interface PropertyPreviewModalProps {
   property: Propiedad | null
@@ -492,46 +492,54 @@ export function PropertyPreviewModal({
                           <Phone className="h-4 w-4 mr-2" />
                           3624-727-330
                         </button>
-                        <div className="grid grid-cols-2 gap-2">
-                          <a 
-                            href={`https://wa.me/5493624727330?text=${encodeURIComponent(`¡Hola! Me interesa esta propiedad: ${property.titulo} - ${formatPrice(property.precio, property.moneda)} en ${property.direccion?.barrio || property.direccion?.ciudad}. ¿Podrían enviarme más información?`)}`}
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="bg-green-500 text-white py-2 px-4 rounded-lg font-medium hover:bg-green-600 transition-colors flex items-center justify-center"
-                          >
-                            <MessageCircle className="h-4 w-4 mr-2" />
-                            Consultar por WhatsApp
-                          </a>
-                          <a 
-                            href={`https://t.me/3624727330?text=${encodeURIComponent(`¡Hola! Me interesa esta propiedad: ${property.titulo} - ${formatPrice(property.precio, property.moneda)} en ${property.direccion?.barrio || property.direccion?.ciudad}. ¿Más información?`)}`}
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="bg-blue-500 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-600 transition-colors flex items-center justify-center"
-                          >
-                            <MessageCircle className="h-4 w-4 mr-2" />
-                            Consultar por Telegram
-                          </a>
+                        
+                        {/* Consultar por */}
+                        <div>
+                          <div className="flex items-center justify-center gap-3 mb-3">
+                            <span className="text-sm font-medium text-gray-700">
+                              Consultanos por:
+                            </span>
+                            <div className="flex items-center">
+                              <a 
+                                href={`https://wa.me/5493624727330?text=${encodeURIComponent(`¡Hola! Me interesa esta propiedad: ${property.titulo} - ${formatPrice(property.precio, property.moneda)} en ${property.direccion?.barrio || property.direccion?.ciudad}. ¿Podrían enviarme más información?\n\nVer propiedad: ${generatePropertyUrl(property)}`)}`}
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="hover:scale-110 transition-transform duration-200"
+                                title="WhatsApp"
+                              >
+                                <WhatsAppIcon />
+                              </a>
+                              <a 
+                                href={`https://t.me/share/url?url=${encodeURIComponent(generatePropertyUrl(property))}&text=${encodeURIComponent(`¡Hola! Me interesa esta propiedad: ${property.titulo} - ${formatPrice(property.precio, property.moneda)} en ${property.direccion?.barrio || property.direccion?.ciudad}. ¿Más información?`)}`}
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="hover:scale-110 transition-transform duration-200"
+                                title="Telegram"
+                              >
+                                <TelegramIcon />
+                              </a>
+                              <a 
+                                href={`https://www.instagram.com/short.grupoinmobiliario?text=${encodeURIComponent(`¡Hola! Me interesa esta propiedad: ${property.titulo} - ${formatPrice(property.precio, property.moneda)} en ${property.direccion?.barrio || property.direccion?.ciudad}. ¿Podrían enviarme más información?\n\nVer propiedad: ${generatePropertyUrl(property)}`)}`}
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="hover:scale-110 transition-transform duration-200"
+                                title="Instagram"
+                              >
+                                <InstagramIcon />
+                              </a>
+                              <a 
+                                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(generatePropertyUrl(property))}&quote=${encodeURIComponent(`¡Hola! Me interesa esta propiedad: ${property.titulo} - ${formatPrice(property.precio, property.moneda)} en ${property.direccion?.barrio || property.direccion?.ciudad}. ¿Podrían enviarme más información?`)}`}
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="hover:scale-110 transition-transform duration-200"
+                                title="Facebook"
+                              >
+                                <FacebookIcon />
+                              </a>
+                            </div>
+                          </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <a 
-                            href="https://www.instagram.com/short.grupoinmobiliario" 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="bg-pink-500 text-white py-2 px-4 rounded-lg font-medium hover:bg-pink-600 transition-colors flex items-center justify-center"
-                          >
-                            <Instagram className="h-4 w-4 mr-2" />
-                            Instagram
-                          </a>
-                          <a 
-                            href="https://www.facebook.com/profile.php?id=100077725346540" 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center"
-                          >
-                            <Facebook className="h-4 w-4 mr-2" />
-                            Facebook
-                          </a>
-                        </div>
+                        
                         <div className="flex space-x-2">
                           <button className="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center justify-center">
                             <Heart className="h-4 w-4 mr-2" />

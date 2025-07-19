@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Share2, MessageCircle, Mail, Link, QrCode, Copy, Check } from 'lucide-react'
+import { X, Share2, Mail, Link, QrCode, Copy, Check } from 'lucide-react'
+import { WhatsAppIcon, TelegramIcon, InstagramIcon, FacebookIcon } from './ui/social-icons'
 import { Propiedad } from '@/lib/services/propiedades'
-import { generatePropertySlug } from '@/lib/utils'
+import { generatePropertyUrl } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
 
 interface SharePropertyModalProps {
@@ -17,15 +18,15 @@ export function SharePropertyModal({ property, isOpen, onClose }: SharePropertyM
   const { toast } = useToast()
   const [copied, setCopied] = useState(false)
   const [showQR, setShowQR] = useState(false)
+  const [propertyUrl, setPropertyUrl] = useState('')
 
-  // Generar la URL SEO friendly
-  const propertyUrl = `${window.location.origin}/propiedad/${generatePropertySlug({
-    tipo: property.tipo_propiedad.nombre,
-    dormitorios: property.dormitorios || undefined,
-    barrio: property.direccion?.barrio || undefined,
-    ciudad: property.direccion?.ciudad || undefined,
-    id: property.id
-  })}`
+  // Generar la URL SEO friendly solo en el cliente
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const url = generatePropertyUrl(property)
+      setPropertyUrl(url)
+    }
+  }, [property])
 
   // Generar mensaje para compartir con información real
   const shareMessage = `¡Mira esta propiedad! ${property.titulo} - ${property.precio} ${property.moneda?.simbolo} en ${property.direccion?.barrio || property.direccion?.ciudad}`
@@ -33,20 +34,24 @@ export function SharePropertyModal({ property, isOpen, onClose }: SharePropertyM
   const shareOptions = [
     {
       name: 'WhatsApp',
-      icon: MessageCircle,
+      icon: WhatsAppIcon,
       color: 'bg-green-500 hover:bg-green-600',
       action: () => {
-        const url = `https://wa.me/?text=${encodeURIComponent(`${shareMessage}\n\n${propertyUrl}`)}`
-        window.open(url, '_blank')
+        if (typeof window !== 'undefined') {
+          const url = `https://wa.me/?text=${encodeURIComponent(`${shareMessage}\n\n${propertyUrl}`)}`
+          window.open(url, '_blank')
+        }
       }
     },
     {
       name: 'Telegram',
-      icon: MessageCircle,
+      icon: TelegramIcon,
       color: 'bg-blue-500 hover:bg-blue-600',
       action: () => {
-        const url = `https://t.me/share/url?url=${encodeURIComponent(propertyUrl)}&text=${encodeURIComponent(shareMessage)}`
-        window.open(url, '_blank')
+        if (typeof window !== 'undefined') {
+          const url = `https://t.me/share/url?url=${encodeURIComponent(propertyUrl)}&text=${encodeURIComponent(shareMessage)}`
+          window.open(url, '_blank')
+        }
       }
     },
     {
@@ -54,10 +59,12 @@ export function SharePropertyModal({ property, isOpen, onClose }: SharePropertyM
       icon: Mail,
       color: 'bg-gray-500 hover:bg-gray-600',
       action: () => {
-        const subject = encodeURIComponent(`Propiedad: ${property.titulo}`)
-        const body = encodeURIComponent(`${shareMessage}\n\nVer más detalles: ${propertyUrl}`)
-        const url = `mailto:?subject=${subject}&body=${body}`
-        window.open(url)
+        if (typeof window !== 'undefined') {
+          const subject = encodeURIComponent(`Propiedad: ${property.titulo}`)
+          const body = encodeURIComponent(`${shareMessage}\n\nVer más detalles: ${propertyUrl}`)
+          const url = `mailto:?subject=${subject}&body=${body}`
+          window.open(url)
+        }
       }
     },
     {
@@ -65,20 +72,22 @@ export function SharePropertyModal({ property, isOpen, onClose }: SharePropertyM
       icon: copied ? Check : Copy,
       color: copied ? 'bg-green-500' : 'bg-purple-500 hover:bg-purple-600',
       action: async () => {
-        try {
-          await navigator.clipboard.writeText(propertyUrl)
-          setCopied(true)
-          toast({
-            title: "Link copiado",
-            description: "El enlace de la propiedad se copió al portapapeles",
-          })
-          setTimeout(() => setCopied(false), 2000)
-        } catch (error) {
-          toast({
-            title: "Error",
-            description: "No se pudo copiar el enlace",
-            variant: "destructive",
-          })
+        if (typeof window !== 'undefined' && navigator.clipboard) {
+          try {
+            await navigator.clipboard.writeText(propertyUrl)
+            setCopied(true)
+            toast({
+              title: "Link copiado",
+              description: "El enlace de la propiedad se copió al portapapeles",
+            })
+            setTimeout(() => setCopied(false), 2000)
+          } catch (error) {
+            toast({
+              title: "Error",
+              description: "No se pudo copiar el enlace",
+              variant: "destructive",
+            })
+          }
         }
       }
     },
@@ -148,7 +157,7 @@ export function SharePropertyModal({ property, isOpen, onClose }: SharePropertyM
                     onClick={option.action}
                     className={`${option.color} text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center`}
                   >
-                    <option.icon className="h-4 w-4 mr-2" />
+                    <option.icon className="h-10 w-10 mr-2" />
                     {option.name}
                   </button>
                 ))}

@@ -11,18 +11,21 @@ interface PropertyPageProps {
 
 export default async function PropertyPage({ params }: PropertyPageProps) {
   try {
+    // Await params para cumplir con Next.js 15
+    const { slug } = await params
+    
     // Extraer el ID del slug (último segmento después del último guión)
     let propertyId: number | null = null
     
     // Patrón 1: ID al final después del último guión
-    const idMatch1 = params.slug.match(/-(\d+)$/)
+    const idMatch1 = slug.match(/-(\d+)$/)
     if (idMatch1) {
       propertyId = parseInt(idMatch1[1])
     }
     
     // Patrón 2: ID al final sin guión
     if (!propertyId) {
-      const idMatch2 = params.slug.match(/(\d+)$/)
+      const idMatch2 = slug.match(/(\d+)$/)
       if (idMatch2) {
         propertyId = parseInt(idMatch2[1])
       }
@@ -30,7 +33,7 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
     
     // Patrón 3: Buscar cualquier número en el slug
     if (!propertyId) {
-      const numbers = params.slug.match(/\d+/g)
+      const numbers = slug.match(/\d+/g)
       if (numbers && numbers.length > 0) {
         propertyId = parseInt(numbers[numbers.length - 1])
       }
@@ -54,7 +57,8 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
     }
     
     // Si la propiedad no está activa, mostrar página de error
-    if (property.estado_registro?.nombre !== 'Activo') {
+    const estadoActivo = ['Activo', 'Activa', 'Disponible', 'Publicado', 'Vigente']
+    if (!estadoActivo.includes(property.estado_registro?.nombre)) {
       console.log('Property not active, estado:', property.estado_registro?.nombre)
       return <PropertyNotFound propertyId={propertyId} />
     }

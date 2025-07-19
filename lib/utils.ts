@@ -41,3 +41,21 @@ export function generatePropertySlug({
 
   return parts.join('-');
 }
+
+/**
+ * Genera la URL completa de una propiedad.
+ * Ejemplo: https://www.gruposhort.com.ar/propiedad/casa-3-dormitorios-resistencia-centro-123
+ */
+export function generatePropertyUrl(property: any, baseUrl?: string): string {
+  const origin = baseUrl || (typeof window !== 'undefined' ? window.location.origin : 'https://www.gruposhort.com.ar');
+  
+  const slug = generatePropertySlug({
+    tipo: property.tipo_propiedad?.nombre || 'propiedad',
+    dormitorios: property.dormitorios,
+    barrio: property.direccion?.barrio,
+    ciudad: property.direccion?.ciudad,
+    id: property.id
+  });
+  
+  return `${origin}/propiedad/${slug}`;
+}
