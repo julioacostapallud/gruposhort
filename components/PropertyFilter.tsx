@@ -7,7 +7,7 @@ type Cat = { id: number; nombre: string };
 type Moneda = { id: number; nombre: string; codigo_iso: string; simbolo: string };
 
 export function PropertyFilter({ onFilter }: { onFilter?: (filters: any) => void }) {
-  // Estado de filtros principales
+  // Estado de filtros principales - TODOS VACÍOS INICIALMENTE
   const [operacion, setOperacion] = useState<string>("");
   const [tipo, setTipo] = useState<number>(0);
   const [tiposProp, setTiposProp] = useState<Cat[]>([]);
@@ -17,14 +17,14 @@ export function PropertyFilter({ onFilter }: { onFilter?: (filters: any) => void
   const [ciudades, setCiudades] = useState<Cat[]>([]);
   const [precio, setPrecio] = useState<[number, number]>([0, 0]);
 
-  // Secundarios
+  // Secundarios - TODOS VACÍOS INICIALMENTE
   const [barrio, setBarrio] = useState<number>(0);
-  const [superficie, setSuperficie] = useState<[number, number]>([0, 1000]);
-  const [ancho, setAncho] = useState<[number, number]>([0, 100]);
-  const [largo, setLargo] = useState<[number, number]>([0, 100]);
-  const [antiguedad, setAntiguedad] = useState<[number, number]>([0, 100]);
-  const [dormitorios, setDormitorios] = useState<[number, number]>([0, 10]);
-  const [banos, setBanos] = useState<[number, number]>([0, 5]);
+  const [superficie, setSuperficie] = useState<[number, number]>([0, 0]);
+  const [ancho, setAncho] = useState<[number, number]>([0, 0]);
+  const [largo, setLargo] = useState<[number, number]>([0, 0]);
+  const [antiguedad, setAntiguedad] = useState<[number, number]>([0, 0]);
+  const [dormitorios, setDormitorios] = useState<[number, number]>([0, 0]);
+  const [banos, setBanos] = useState<[number, number]>([0, 0]);
   const [estadoComercial, setEstadoComercial] = useState<number>(0);
   const [estadoFisico, setEstadoFisico] = useState<number>(0);
   const [estadoSituacion, setEstadoSituacion] = useState<number>(0);
@@ -81,24 +81,58 @@ export function PropertyFilter({ onFilter }: { onFilter?: (filters: any) => void
     });
   }, []);
 
-  // Cargar ciudades según provincia
+  // Cargar ciudades según provincia - NO RESETEAR CIUDAD SI YA ESTÁ SELECCIONADA
   useEffect(() => {
     if (provincia) {
       api.list<Cat[]>(`ciudades?provincia_id=${provincia}`).then(setCiudades);
     } else {
       setCiudades([]);
+      setCiudad(0); // Solo resetear si se deselecciona la provincia
     }
-    setCiudad(0);
   }, [provincia]);
+
+  // Aplicar filtros automáticamente cuando cambien los valores
+  useEffect(() => {
+    // Solo aplicar si hay algún filtro activo con valores válidos
+    const hasActiveFilters = operacion || 
+                           tipo > 0 || 
+                           provincia > 0 || 
+                           ciudad > 0 || 
+                           barrio > 0 || 
+                           moneda > 0 || 
+                           precio[0] > 0 || 
+                           precio[1] > 0 || 
+                           estadoComercial > 0 || 
+                           estadoFisico > 0 || 
+                           estadoSituacion > 0 || 
+                           estadoRegistro > 0 ||
+                           superficie[0] > 0 || 
+                           superficie[1] > 0 || 
+                           ancho[0] > 0 || 
+                           ancho[1] > 0 ||
+                           largo[0] > 0 || 
+                           largo[1] > 0 || 
+                           antiguedad[1] > 0 || 
+                           dormitorios[0] > 0 ||
+                           banos[0] > 0 || 
+                           caracts.length > 0;
+    
+    if (hasActiveFilters) {
+      handleBuscar();
+    }
+    // Removemos el else para que no se ejecute automáticamente al cargar
+  }, [operacion, tipo, provincia, ciudad, barrio, moneda, precio, estadoComercial, estadoFisico, 
+      estadoSituacion, estadoRegistro, superficie, ancho, largo, antiguedad, 
+      dormitorios, banos, caracts]);
 
   // Limpiar solo filtros secundarios
   function limpiarFiltrosSecundarios() {
-    setSuperficie([0, 1000]);
-    setAncho([0, 100]);
-    setLargo([0, 100]);
-    setAntiguedad([0, 100]);
-    setDormitorios([0, 10]);
-    setBanos([0, 5]);
+    setSuperficie([0, 0]);
+    setAncho([0, 0]);
+    setLargo([0, 0]);
+    setAntiguedad([0, 0]);
+    setDormitorios([0, 0]);
+    setBanos([0, 0]);
     setEstadoComercial(0);
     setEstadoFisico(0);
     setEstadoSituacion(0);
@@ -130,24 +164,28 @@ export function PropertyFilter({ onFilter }: { onFilter?: (filters: any) => void
 
   function handleBuscar() {
     const filters = {
-      tipo_propiedad: tipo || undefined,
-      estado_fisico: estadoFisico || undefined,
-      estado_situacion: estadoSituacion || undefined,
-      estado_registro: estadoRegistro || undefined,
+      operacion: operacion || undefined,
+      tipo_propiedad: tipo > 0 ? tipo : undefined,
+      estado_comercial: estadoComercial > 0 ? estadoComercial : undefined,
+      estado_fisico: estadoFisico > 0 ? estadoFisico : undefined,
+      estado_situacion: estadoSituacion > 0 ? estadoSituacion : undefined,
+      estado_registro: estadoRegistro > 0 ? estadoRegistro : undefined,
+      provincia: provincia > 0 ? provincias.find(p => p.id === provincia)?.nombre : undefined,
+      ciudad: ciudad > 0 ? ciudades.find(c => c.id === ciudad)?.nombre : undefined,
+      barrio: barrio > 0 ? barrios.find(b => b.id === barrio)?.nombre : undefined,
       min_precio: precio[0] > 0 ? precio[0] : undefined,
-      max_precio: precio[1] < 1000000 ? precio[1] : undefined,
+      max_precio: precio[1] > 0 ? precio[1] : undefined,
       min_superficie: superficie[0] > 0 ? superficie[0] : undefined,
-      max_superficie: superficie[1] < 1000 ? superficie[1] : undefined,
+      max_superficie: superficie[1] > 0 ? superficie[1] : undefined,
       min_ancho: ancho[0] > 0 ? ancho[0] : undefined,
-      max_ancho: ancho[1] < 100 ? ancho[1] : undefined,
+      max_ancho: ancho[1] > 0 ? ancho[1] : undefined,
       min_largo: largo[0] > 0 ? largo[0] : undefined,
-      max_largo: largo[1] < 100 ? largo[1] : undefined,
-      max_antiguedad: antiguedad[1] < 100 ? antiguedad[1] : undefined,
+      max_largo: largo[1] > 0 ? largo[1] : undefined,
+      max_antiguedad: antiguedad[1] > 0 ? antiguedad[1] : undefined,
       min_dormitorios: dormitorios[0] > 0 ? dormitorios[0] : undefined,
       min_banos: banos[0] > 0 ? banos[0] : undefined,
-      moneda: moneda || undefined,
+      moneda: moneda > 0 ? moneda : undefined,
       caracteristicas: caracts.length > 0 ? caracts : undefined,
-      // Nota: provincia, ciudad y barrio necesitarían endpoints específicos en el backend
     };
     
     onFilter?.(filters);
@@ -236,8 +274,8 @@ export function PropertyFilter({ onFilter }: { onFilter?: (filters: any) => void
             {["Comprar", "Alquilar"].map(op => (
               <button
                 key={op}
-                onClick={() => setOperacion(op)}
-                className={`px-3 h-9 rounded-lg text-sm font-medium border transition-colors ${operacion === op ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50'} ${operacion === op ? 'border-blue-600' : 'border-blue-200'}`}
+                onClick={() => setOperacion(operacion === op ? "" : op)}
+                className={`px-3 h-9 rounded-lg text-sm font-medium border transition-colors ${operacion === op ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50'}`}
                 style={{ minWidth: 80 }}
               >
                 {op}
@@ -389,22 +427,22 @@ export function PropertyFilter({ onFilter }: { onFilter?: (filters: any) => void
                   {/* Dormitorios */}
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Dormitorios</label>
-                    <input type="number" value={dormitorios[0]} onChange={e => setDormitorios([+e.target.value, dormitorios[1]])} className={`border ${dormitorios[0] > 0 ? 'border-blue-600' : 'border-blue-200'} rounded-lg px-3 h-9 text-sm w-full text-gray-800`} placeholder="Cantidad" />
+                    <input type="number" value={dormitorios[0] || ''} onChange={e => setDormitorios([+e.target.value || 0, dormitorios[1]])} className={`border ${dormitorios[0] > 0 ? 'border-blue-600' : 'border-blue-200'} rounded-lg px-3 h-9 text-sm w-full text-gray-800`} placeholder="Cantidad" />
                   </div>
 
                   {/* Baños */}
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Baños</label>
-                    <input type="number" value={banos[0]} onChange={e => setBanos([+e.target.value, banos[1]])} className={`border ${banos[0] > 0 ? 'border-blue-600' : 'border-blue-200'} rounded-lg px-3 h-9 text-sm w-full text-gray-800`} placeholder="Cantidad" />
+                    <input type="number" value={banos[0] || ''} onChange={e => setBanos([+e.target.value || 0, banos[1]])} className={`border ${banos[0] > 0 ? 'border-blue-600' : 'border-blue-200'} rounded-lg px-3 h-9 text-sm w-full text-gray-800`} placeholder="Cantidad" />
                   </div>
 
                   {/* Ancho */}
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Ancho (m)</label>
                     <div className="flex gap-2">
-                      <input type="number" value={ancho[0]} onChange={e => setAncho([+e.target.value, ancho[1]])} className={`border ${ancho[0] > 0 ? 'border-blue-600' : 'border-blue-200'} rounded-lg px-3 h-9 text-sm w-20 text-gray-800`} placeholder="Min" />
+                      <input type="number" value={ancho[0] || ''} onChange={e => setAncho([+e.target.value || 0, ancho[1]])} className={`border ${ancho[0] > 0 ? 'border-blue-600' : 'border-blue-200'} rounded-lg px-3 h-9 text-sm w-20 text-gray-800`} placeholder="Min" />
                       <span className="text-gray-400 self-center">-</span>
-                      <input type="number" value={ancho[1]} onChange={e => setAncho([ancho[0], +e.target.value])} className={`border ${ancho[1] < 100 ? 'border-blue-600' : 'border-blue-200'} rounded-lg px-3 h-9 text-sm w-20 text-gray-800`} placeholder="Max" />
+                      <input type="number" value={ancho[1] || ''} onChange={e => setAncho([ancho[0], +e.target.value || 0])} className={`border ${ancho[1] > 0 ? 'border-blue-600' : 'border-blue-200'} rounded-lg px-3 h-9 text-sm w-20 text-gray-800`} placeholder="Max" />
                     </div>
                   </div>
 
@@ -412,16 +450,16 @@ export function PropertyFilter({ onFilter }: { onFilter?: (filters: any) => void
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Largo (m)</label>
                     <div className="flex gap-2">
-                      <input type="number" value={largo[0]} onChange={e => setLargo([+e.target.value, largo[1]])} className={`border ${largo[0] > 0 ? 'border-blue-600' : 'border-blue-200'} rounded-lg px-3 h-9 text-sm w-20 text-gray-800`} placeholder="Min" />
+                      <input type="number" value={largo[0] || ''} onChange={e => setLargo([+e.target.value || 0, largo[1]])} className={`border ${largo[0] > 0 ? 'border-blue-600' : 'border-blue-200'} rounded-lg px-3 h-9 text-sm w-20 text-gray-800`} placeholder="Min" />
                       <span className="text-gray-400 self-center">-</span>
-                      <input type="number" value={largo[1]} onChange={e => setLargo([largo[0], +e.target.value])} className={`border ${largo[1] < 100 ? 'border-blue-600' : 'border-blue-200'} rounded-lg px-3 h-9 text-sm w-20 text-gray-800`} placeholder="Max" />
+                      <input type="number" value={largo[1] || ''} onChange={e => setLargo([largo[0], +e.target.value || 0])} className={`border ${largo[1] > 0 ? 'border-blue-600' : 'border-blue-200'} rounded-lg px-3 h-9 text-sm w-20 text-gray-800`} placeholder="Max" />
                     </div>
                   </div>
 
                   {/* Antigüedad */}
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Antigüedad (años)</label>
-                    <input type="number" value={antiguedad[1]} onChange={e => setAntiguedad([0, +e.target.value])} className={`border ${antiguedad[1] < 100 ? 'border-blue-600' : 'border-blue-200'} rounded-lg px-3 h-9 text-sm w-full text-gray-800`} placeholder="Máximo" />
+                    <input type="number" value={antiguedad[1] || ''} onChange={e => setAntiguedad([0, +e.target.value || 0])} className={`border ${antiguedad[1] > 0 ? 'border-blue-600' : 'border-blue-200'} rounded-lg px-3 h-9 text-sm w-full text-gray-800`} placeholder="Máximo" />
                   </div>
 
 
@@ -430,12 +468,12 @@ export function PropertyFilter({ onFilter }: { onFilter?: (filters: any) => void
                     <Select
                       instanceId="estado-fisico-select"
                       options={estFis.map(e => ({ value: e.id, label: e.nombre }))}
-                      value={{ value: estadoFisico, label: estFis.find(e => e.id === estadoFisico)?.nombre || "Todos" }}
-                      onChange={e => setEstadoFisico(Number(e?.value))}
+                      value={estadoFisico > 0 ? { value: estadoFisico, label: estFis.find(e => e.id === estadoFisico)?.nombre } : null}
+                      onChange={e => setEstadoFisico(Number(e?.value || 0))}
                       placeholder="Todos"
                       styles={selectStyles}
                       isSearchable={false}
-                      isClearable={false}
+                      isClearable={true}
                       className="w-full"
                     />
                   </div>
@@ -444,12 +482,12 @@ export function PropertyFilter({ onFilter }: { onFilter?: (filters: any) => void
                     <Select
                       instanceId="estado-situacion-select"
                       options={estSit.map(e => ({ value: e.id, label: e.nombre }))}
-                      value={{ value: estadoSituacion, label: estSit.find(e => e.id === estadoSituacion)?.nombre || "Todos" }}
-                      onChange={e => setEstadoSituacion(Number(e?.value))}
+                      value={estadoSituacion > 0 ? { value: estadoSituacion, label: estSit.find(e => e.id === estadoSituacion)?.nombre } : null}
+                      onChange={e => setEstadoSituacion(Number(e?.value || 0))}
                       placeholder="Todos"
                       styles={selectStyles}
                       isSearchable={false}
-                      isClearable={false}
+                      isClearable={true}
                       className="w-full"
                     />
                   </div>
@@ -481,22 +519,22 @@ export function PropertyFilter({ onFilter }: { onFilter?: (filters: any) => void
                                   {/* Dormitorios */}
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Dormitorios</label>
-                    <input type="number" value={dormitorios[0]} onChange={e => setDormitorios([+e.target.value, dormitorios[1]])} className={`border ${dormitorios[0] > 0 ? 'border-blue-600' : 'border-blue-200'} rounded-lg px-3 h-9 text-sm w-20 text-gray-800`} placeholder="Cantidad" />
+                    <input type="number" value={dormitorios[0] || ''} onChange={e => setDormitorios([+e.target.value || 0, dormitorios[1]])} className={`border ${dormitorios[0] > 0 ? 'border-blue-600' : 'border-blue-200'} rounded-lg px-3 h-9 text-sm w-20 text-gray-800`} placeholder="Cantidad" />
                   </div>
 
                                   {/* Baños */}
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Baños</label>
-                    <input type="number" value={banos[0]} onChange={e => setBanos([+e.target.value, banos[1]])} className={`border ${banos[0] > 0 ? 'border-blue-600' : 'border-blue-200'} rounded-lg px-3 h-9 text-sm w-20 text-gray-800`} placeholder="Cantidad" />
+                    <input type="number" value={banos[0] || ''} onChange={e => setBanos([+e.target.value || 0, banos[1]])} className={`border ${banos[0] > 0 ? 'border-blue-600' : 'border-blue-200'} rounded-lg px-3 h-9 text-sm w-20 text-gray-800`} placeholder="Cantidad" />
                   </div>
 
                                   {/* Ancho */}
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Ancho (m)</label>
                     <div className="flex gap-2">
-                      <input type="number" value={ancho[0]} onChange={e => setAncho([+e.target.value, ancho[1]])} className={`border ${ancho[0] > 0 ? 'border-blue-600' : 'border-blue-200'} rounded-lg px-3 h-9 text-sm w-20 text-gray-800`} placeholder="Min" />
+                      <input type="number" value={ancho[0] || ''} onChange={e => setAncho([+e.target.value || 0, ancho[1]])} className={`border ${ancho[0] > 0 ? 'border-blue-600' : 'border-blue-200'} rounded-lg px-3 h-9 text-sm w-20 text-gray-800`} placeholder="Min" />
                       <span className="text-gray-400 self-center">-</span>
-                      <input type="number" value={ancho[1]} onChange={e => setAncho([ancho[0], +e.target.value])} className={`border ${ancho[1] < 100 ? 'border-blue-600' : 'border-blue-200'} rounded-lg px-3 h-9 text-sm w-20 text-gray-800`} placeholder="Max" />
+                      <input type="number" value={ancho[1] || ''} onChange={e => setAncho([ancho[0], +e.target.value || 0])} className={`border ${ancho[1] > 0 ? 'border-blue-600' : 'border-blue-200'} rounded-lg px-3 h-9 text-sm w-20 text-gray-800`} placeholder="Max" />
                     </div>
                   </div>
 
@@ -504,16 +542,16 @@ export function PropertyFilter({ onFilter }: { onFilter?: (filters: any) => void
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Largo (m)</label>
                     <div className="flex gap-2">
-                      <input type="number" value={largo[0]} onChange={e => setLargo([+e.target.value, largo[1]])} className={`border ${largo[0] > 0 ? 'border-blue-600' : 'border-blue-200'} rounded-lg px-3 h-9 text-sm w-20 text-gray-800`} placeholder="Min" />
+                      <input type="number" value={largo[0] || ''} onChange={e => setLargo([+e.target.value || 0, largo[1]])} className={`border ${largo[0] > 0 ? 'border-blue-600' : 'border-blue-200'} rounded-lg px-3 h-9 text-sm w-20 text-gray-800`} placeholder="Min" />
                       <span className="text-gray-400 self-center">-</span>
-                      <input type="number" value={largo[1]} onChange={e => setLargo([largo[0], +e.target.value])} className={`border ${largo[1] < 100 ? 'border-blue-600' : 'border-blue-200'} rounded-lg px-3 h-9 text-sm w-20 text-gray-800`} placeholder="Max" />
+                      <input type="number" value={largo[1] || ''} onChange={e => setLargo([largo[0], +e.target.value || 0])} className={`border ${largo[1] > 0 ? 'border-blue-600' : 'border-blue-200'} rounded-lg px-3 h-9 text-sm w-20 text-gray-800`} placeholder="Max" />
                     </div>
                   </div>
 
                                   {/* Antigüedad */}
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Antigüedad (años)</label>
-                    <input type="number" value={antiguedad[1]} onChange={e => setAntiguedad([0, +e.target.value])} className={`border ${antiguedad[1] < 100 ? 'border-blue-600' : 'border-blue-200'} rounded-lg px-3 h-9 text-sm w-20 text-gray-800`} placeholder="Máximo" />
+                    <input type="number" value={antiguedad[1] || ''} onChange={e => setAntiguedad([0, +e.target.value || 0])} className={`border ${antiguedad[1] > 0 ? 'border-blue-600' : 'border-blue-200'} rounded-lg px-3 h-9 text-sm w-20 text-gray-800`} placeholder="Máximo" />
                   </div>
 
 
@@ -522,12 +560,12 @@ export function PropertyFilter({ onFilter }: { onFilter?: (filters: any) => void
                   <Select
                     instanceId="estado-fisico-desktop-select"
                     options={estFis.map(e => ({ value: e.id, label: e.nombre }))}
-                    value={{ value: estadoFisico, label: estFis.find(e => e.id === estadoFisico)?.nombre || "Todos" }}
-                    onChange={e => setEstadoFisico(Number(e?.value))}
+                    value={estadoFisico > 0 ? { value: estadoFisico, label: estFis.find(e => e.id === estadoFisico)?.nombre } : null}
+                    onChange={e => setEstadoFisico(Number(e?.value || 0))}
                     placeholder="Todos"
                     styles={selectStyles}
                     isSearchable={false}
-                    isClearable={false}
+                    isClearable={true}
                     className="w-full"
                   />
                 </div>
@@ -536,12 +574,12 @@ export function PropertyFilter({ onFilter }: { onFilter?: (filters: any) => void
                   <Select
                     instanceId="estado-situacion-desktop-select"
                     options={estSit.map(e => ({ value: e.id, label: e.nombre }))}
-                    value={{ value: estadoSituacion, label: estSit.find(e => e.id === estadoSituacion)?.nombre || "Todos" }}
-                    onChange={e => setEstadoSituacion(Number(e?.value))}
+                    value={estadoSituacion > 0 ? { value: estadoSituacion, label: estSit.find(e => e.id === estadoSituacion)?.nombre } : null}
+                    onChange={e => setEstadoSituacion(Number(e?.value || 0))}
                     placeholder="Todos"
                     styles={selectStyles}
                     isSearchable={false}
-                    isClearable={false}
+                    isClearable={true}
                     className="w-full"
                   />
                 </div>

@@ -39,76 +39,90 @@ export default function Home() {
   }, [])
 
   // Función para manejar los filtros
-  const handleFilter = async (filters: any) => {
+  const handleFilter = (filters: any) => {
     setCurrentFilters(filters)
     setIsLoading(true)
-    try {
-      const filteredData = await propiedades.list(filters)
-      setFilteredPropiedades(filteredData)
-    } catch (error) {
-      console.error("Error al filtrar propiedades:", error)
-      // Si falla el filtrado del backend, hacer filtrado local
-      const localFiltered = propiedadesList.filter(prop => {
-        // Filtro por tipo de propiedad
-        if (filters.tipo_propiedad && prop.tipo_propiedad.id !== filters.tipo_propiedad) return false
-        
-        // Filtro por precio
-        const precio = Number(prop.precio)
-        if (filters.min_precio && precio < filters.min_precio) return false
-        if (filters.max_precio && precio > filters.max_precio) return false
-        
-        // Filtro por superficie
-        const superficie = Number(prop.superficie_m2)
-        if (filters.min_superficie && superficie < filters.min_superficie) return false
-        if (filters.max_superficie && superficie > filters.max_superficie) return false
-        
-        // Filtro por ancho
-        const ancho = Number(prop.ancho_m)
-        if (filters.min_ancho && ancho < filters.min_ancho) return false
-        if (filters.max_ancho && ancho > filters.max_ancho) return false
-        
-        // Filtro por largo
-        const largo = Number(prop.largo_m)
-        if (filters.min_largo && largo < filters.min_largo) return false
-        if (filters.max_largo && largo > filters.max_largo) return false
-        
-        // Filtro por antigüedad
-        if (filters.max_antiguedad && (prop.antiguedad || 0) > filters.max_antiguedad) return false
-        
-        // Filtro por dormitorios
-        if (filters.min_dormitorios && (prop.dormitorios || 0) < filters.min_dormitorios) return false
-        
-        // Filtro por baños
-        if (filters.min_banos && (prop.banos || 0) < filters.min_banos) return false
-        
-        // Filtro por estado comercial
-        if (filters.estado_comercial && prop.estado_comercial.id !== filters.estado_comercial) return false
-        
-        // Filtro por estado físico
-        if (filters.estado_fisico && prop.estado_fisico.id !== filters.estado_fisico) return false
-        
-        // Filtro por estado situación
-        if (filters.estado_situacion && prop.estado_situacion.id !== filters.estado_situacion) return false
-        
-        // Filtro por estado registro
-        if (filters.estado_registro && prop.estado_registro.id !== filters.estado_registro) return false
-        
-        // Filtro por moneda
-        if (filters.moneda && prop.moneda.id !== filters.moneda) return false
-        
-        // Filtro por características
-        if (filters.caracteristicas && filters.caracteristicas.length > 0) {
-          const propCaracts = prop.caracteristicas.map(c => c.id)
-          const hasAllCaracts = filters.caracteristicas.every((catId: number) => propCaracts.includes(catId))
-          if (!hasAllCaracts) return false
+    
+    // Filtrado completamente en el frontend
+    const localFiltered = propiedadesList.filter(prop => {
+      // Filtro por operación (Comprar/Alquilar)
+      if (filters.operacion) {
+        // Por ahora, asumimos que todas las propiedades son para comprar
+        // En el futuro, esto se puede basar en un campo específico de la propiedad
+        if (filters.operacion === "Alquilar") {
+          // Si no hay lógica específica para alquiler, mostrar todas
+          // return false; // Comentar esta línea si queremos mostrar todas
         }
-        
-        return true
-      })
-      setFilteredPropiedades(localFiltered)
-    } finally {
-      setIsLoading(false)
-    }
+      }
+      
+      // Filtro por tipo de propiedad
+      if (filters.tipo_propiedad && prop.tipo_propiedad.id !== filters.tipo_propiedad) return false
+      
+      // Filtro por estado comercial
+      if (filters.estado_comercial && prop.estado_comercial.id !== filters.estado_comercial) return false
+      
+      // Filtro por estado físico
+      if (filters.estado_fisico && prop.estado_fisico.id !== filters.estado_fisico) return false
+      
+      // Filtro por estado situación
+      if (filters.estado_situacion && prop.estado_situacion.id !== filters.estado_situacion) return false
+      
+      // Filtro por estado registro
+      if (filters.estado_registro && prop.estado_registro.id !== filters.estado_registro) return false
+      
+      // Filtro por provincia
+      if (filters.provincia && prop.direccion?.provincia !== filters.provincia) return false
+      
+      // Filtro por ciudad
+      if (filters.ciudad && prop.direccion?.ciudad !== filters.ciudad) return false
+      
+      // Filtro por barrio
+      if (filters.barrio && prop.direccion?.barrio !== filters.barrio) return false
+      
+      // Filtro por precio
+      const precio = Number(prop.precio)
+      if (filters.min_precio && precio < filters.min_precio) return false
+      if (filters.max_precio && precio > filters.max_precio) return false
+      
+      // Filtro por superficie
+      const superficie = Number(prop.superficie_m2)
+      if (filters.min_superficie && superficie < filters.min_superficie) return false
+      if (filters.max_superficie && superficie > filters.max_superficie) return false
+      
+      // Filtro por ancho
+      const ancho = Number(prop.ancho_m)
+      if (filters.min_ancho && ancho < filters.min_ancho) return false
+      if (filters.max_ancho && ancho > filters.max_ancho) return false
+      
+      // Filtro por largo
+      const largo = Number(prop.largo_m)
+      if (filters.min_largo && largo < filters.min_largo) return false
+      if (filters.max_largo && largo > filters.max_largo) return false
+      
+      // Filtro por antigüedad
+      if (filters.max_antiguedad && (prop.antiguedad || 0) > filters.max_antiguedad) return false
+      
+      // Filtro por dormitorios
+      if (filters.min_dormitorios && (prop.dormitorios || 0) < filters.min_dormitorios) return false
+      
+      // Filtro por baños
+      if (filters.min_banos && (prop.banos || 0) < filters.min_banos) return false
+      
+      // Filtro por moneda
+      if (filters.moneda && prop.moneda.id !== filters.moneda) return false
+      
+      // Filtro por características
+      if (filters.caracteristicas && filters.caracteristicas.length > 0) {
+        const propCaracts = prop.caracteristicas.map(c => c.id)
+        const hasAllCaracts = filters.caracteristicas.every((catId: number) => propCaracts.includes(catId))
+        if (!hasAllCaracts) return false
+      }
+      
+      return true
+    })
+    
+    setFilteredPropiedades(localFiltered)
+    setIsLoading(false)
   }
 
   // Redirigir al admin si está autenticado y es administrador
@@ -147,12 +161,12 @@ export default function Home() {
       </section>
 
       {/* Explore Properties Section */}
-      <CategorySection />
+      {/* <CategorySection /> */}
 
-      {/* Recent Properties Section */}
+      {/* Properties Section */}
       <section className="py-16 bg-gray-50">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold mb-8 text-center">Propiedades Recientes</h2>
+          <h2 className="text-3xl font-bold mb-8 text-center">Propiedades</h2>
           {isLoading ? (
             <div className="text-center py-12">
               <div className="text-gray-500 text-lg mb-4">Buscando propiedades...</div>
@@ -209,13 +223,13 @@ export default function Home() {
       />
 
       {/* Boost Section */}
-      <BoostSection />
+      {/* <BoostSection /> */}
 
       {/* Explore Neighborhoods */}
-      <ExploreSection />
+      {/* <ExploreSection /> */}
 
       {/* Market Trends */}
-      <TrendsSection />
+      {/* <TrendsSection /> */}
 
       {/* Footer */}
       <Footer />

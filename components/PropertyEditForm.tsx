@@ -133,6 +133,16 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
               const ciudadObj = ciuds.find(c => c.nombre === property.direccion?.ciudad)
               if (ciudadObj) {
                 setForm(f => ({ ...f, ciudad_id: ciudadObj.id }))
+                // Cargar barrios de esa ciudad y precargar barrio_id
+                api.list<Cat[]>(`barrios?ciudad_id=${ciudadObj.id}`).then(barrios => {
+                  setBarrios(barrios)
+                  if (property.direccion && property.direccion.barrio) {
+                    const barrioObj = barrios.find(b => b.nombre === property.direccion?.barrio)
+                    if (barrioObj) {
+                      setForm(f => ({ ...f, barrio_id: barrioObj.id }))
+                    }
+                  }
+                })
               }
             }
           })

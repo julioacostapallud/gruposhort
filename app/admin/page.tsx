@@ -11,35 +11,140 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../lib/store/store';
 import { checkAuthStatus, logoutUser } from '../../lib/store/authSlice';
 import { useRouter } from 'next/navigation';
+import Select from 'react-select';
+import { api } from '../../lib/services/apiClient';
+
+type Cat = { id: number; nombre: string };
+type Moneda = { id: number; nombre: string; codigo_iso: string; simbolo: string };
 
 export default function AdminPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState({
-    tipo_propiedad: 'all',
-    estado_comercial: 'all',
-    estado_situacion: 'all',
-    estado_registro: 'all',
-    estado_fisico: 'all',
-    min_precio: '',
-    max_precio: '',
-    min_superficie: '',
-    max_superficie: '',
-    min_ancho: '',
-    max_ancho: '',
-    min_largo: '',
-    max_largo: '',
-    max_antiguedad: '',
-    min_dormitorios: ''
-  });
+  
+  // Filtros principales - TODOS VACÍOS INICIALMENTE
+  const [operacion, setOperacion] = useState<string>("");
+  const [tipo, setTipo] = useState<number>(0);
+  const [tiposProp, setTiposProp] = useState<Cat[]>([]);
+  const [provincia, setProvincia] = useState<number>(0);
+  const [provincias, setProvincias] = useState<Cat[]>([]);
+  const [ciudad, setCiudad] = useState<number>(0);
+  const [ciudades, setCiudades] = useState<Cat[]>([]);
+  const [precio, setPrecio] = useState<[number, number]>([0, 0]);
+
+  // Secundarios - TODOS VACÍOS INICIALMENTE
+  const [barrio, setBarrio] = useState<number>(0);
+  const [superficie, setSuperficie] = useState<[number, number]>([0, 0]);
+  const [ancho, setAncho] = useState<[number, number]>([0, 0]);
+  const [largo, setLargo] = useState<[number, number]>([0, 0]);
+  const [antiguedad, setAntiguedad] = useState<[number, number]>([0, 0]);
+  const [dormitorios, setDormitorios] = useState<[number, number]>([0, 0]);
+  const [banos, setBanos] = useState<[number, number]>([0, 0]);
+  const [estadoComercial, setEstadoComercial] = useState<number>(0);
+  const [estadoFisico, setEstadoFisico] = useState<number>(0);
+  const [estadoSituacion, setEstadoSituacion] = useState<number>(0);
+  const [estadoRegistro, setEstadoRegistro] = useState<number>(0);
+  const [moneda, setMoneda] = useState<number>(0);
+  const [caracts, setCaracts] = useState<number[]>([]);
+  const [caracteristicas, setCaracteristicas] = useState<Cat[]>([]);
+  const [barrios, setBarrios] = useState<Cat[]>([]);
+  const [estCom, setEstCom] = useState<Cat[]>([]);
+  const [estFis, setEstFis] = useState<Cat[]>([]);
+  const [estSit, setEstSit] = useState<Cat[]>([]);
+  const [estReg, setEstReg] = useState<Cat[]>([]);
+  const [monedas, setMonedas] = useState<Moneda[]>([]);
+  
   const [showNewPropertyModal, setShowNewPropertyModal] = useState(false);
   const [showEditPropertyModal, setShowEditPropertyModal] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<Propiedad | null>(null);
   const [propertiesVersion, setPropertiesVersion] = useState(0);
+  const [appliedFilters, setAppliedFilters] = useState<any>({});
 
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const { isAuthenticated, user, loading } = useSelector((state: RootState) => state.auth as any);
+
+  // Función para construir los filtros
+  const buildFilters = () => {
+    return {
+      operacion: operacion || undefined,
+      tipo_propiedad: tipo > 0 ? tipo : undefined,
+      estado_comercial: estadoComercial > 0 ? estadoComercial : undefined,
+      estado_fisico: estadoFisico > 0 ? estadoFisico : undefined,
+      estado_situacion: estadoSituacion > 0 ? estadoSituacion : undefined,
+      estado_registro: estadoRegistro > 0 ? estadoRegistro : undefined,
+      provincia: provincia > 0 ? provincias.find(p => p.id === provincia)?.nombre : undefined,
+      ciudad: ciudad > 0 ? ciudades.find(c => c.id === ciudad)?.nombre : undefined,
+      barrio: barrio > 0 ? barrios.find(b => b.id === barrio)?.nombre : undefined,
+      min_precio: precio[0] > 0 ? precio[0] : undefined,
+      max_precio: precio[1] > 0 ? precio[1] : undefined,
+      min_superficie: superficie[0] > 0 ? superficie[0] : undefined,
+      max_superficie: superficie[1] > 0 ? superficie[1] : undefined,
+      min_ancho: ancho[0] > 0 ? ancho[0] : undefined,
+      max_ancho: ancho[1] > 0 ? ancho[1] : undefined,
+      min_largo: largo[0] > 0 ? largo[0] : undefined,
+      max_largo: largo[1] > 0 ? largo[1] : undefined,
+      max_antiguedad: antiguedad[1] > 0 ? antiguedad[1] : undefined,
+      min_dormitorios: dormitorios[0] > 0 ? dormitorios[0] : undefined,
+      min_banos: banos[0] > 0 ? banos[0] : undefined,
+      moneda: moneda > 0 ? moneda : undefined,
+      caracteristicas: caracts.length > 0 ? caracts : undefined,
+    };
+  };
+
+  // Aplicar filtros automáticamente cuando cambien los valores
+  useEffect(() => {
+    const filters = buildFilters();
+    setAppliedFilters(filters);
+  }, [operacion, tipo, provincia, ciudad, barrio, moneda, precio, estadoComercial, estadoFisico, 
+      estadoSituacion, estadoRegistro, superficie, ancho, largo, antiguedad, 
+      dormitorios, banos, caracts]);
+
+  // Cargar catálogos
+  useEffect(() => {
+    Promise.all([
+      api.list<Cat[]>("tipos_propiedad").catch(() => []),
+      api.list<Cat[]>("tipos_estado_comercial").catch(() => []),
+      api.list<Cat[]>("tipos_estado_fisico").catch(() => []),
+      api.list<Cat[]>("tipos_estado_situacion").catch(() => []),
+      api.list<Cat[]>("tipos_estado_registro").catch(() => []),
+      api.list<Moneda[]>("monedas").catch(() => []),
+      api.list<Cat[]>("caracteristicas").catch(() => []),
+      api.list<Cat[]>("provincias").catch(() => []),
+      api.list<Cat[]>("barrios").catch(() => [])
+    ]).then(([tp, ec, ef, es, er, m, c, provs, barr]) => {
+      setTiposProp(tp || []);
+      setEstCom(ec || []);
+      setEstFis(ef || []);
+      setEstSit(es || []);
+      setEstReg(er || []);
+      setMonedas(m || []);
+      setCaracteristicas(c || []);
+      setProvincias(provs || []);
+      setBarrios(barr || []);
+    }).catch(error => {
+      console.error("Error cargando catálogos:", error);
+    });
+  }, []);
+
+  // Cargar ciudades según provincia
+  useEffect(() => {
+    if (provincia) {
+      api.list<Cat[]>(`ciudades?provincia_id=${provincia}`).then(setCiudades);
+    } else {
+      setCiudades([]);
+      setCiudad(0);
+    }
+  }, [provincia]);
+
+  // Cargar barrios según ciudad
+  useEffect(() => {
+    if (ciudad) {
+      api.list<Cat[]>(`barrios?ciudad_id=${ciudad}`).then(setBarrios);
+    } else {
+      setBarrios([]);
+      setBarrio(0);
+    }
+  }, [ciudad]);
 
   useEffect(() => {
     dispatch(checkAuthStatus());
@@ -73,41 +178,55 @@ export default function AdminPage() {
     setShowNewPropertyModal(false);
     setShowEditPropertyModal(false);
     setSelectedProperty(null);
-    setPropertiesVersion(v => v + 1); // Fuerza recarga reactiva
+    setPropertiesVersion(v => v + 1);
   };
 
   const clearFilters = () => {
-    setFilters({
-      tipo_propiedad: 'all',
-      estado_comercial: 'all',
-      estado_situacion: 'all',
-      estado_registro: 'all',
-      estado_fisico: 'all',
-      min_precio: '',
-      max_precio: '',
-      min_superficie: '',
-      max_superficie: '',
-      min_ancho: '',
-      max_ancho: '',
-      min_largo: '',
-      max_largo: '',
-      max_antiguedad: '',
-      min_dormitorios: ''
-    });
+    setOperacion("");
+    setTipo(0);
+    setProvincia(0);
+    setCiudad(0);
+    setBarrio(0);
+    setMoneda(0);
+    setPrecio([0, 0]);
+    setSuperficie([0, 0]);
+    setAncho([0, 0]);
+    setLargo([0, 0]);
+    setAntiguedad([0, 0]);
+    setDormitorios([0, 0]);
+    setBanos([0, 0]);
+    setEstadoComercial(0);
+    setEstadoFisico(0);
+    setEstadoSituacion(0);
+    setEstadoRegistro(0);
+    setCaracts([]);
     setSearchTerm('');
   };
 
   const hasActiveFilters = () => {
     return searchTerm || 
-           filters.tipo_propiedad !== 'all' || 
-           filters.estado_comercial !== 'all' || 
-           filters.estado_situacion !== 'all' || 
-           filters.estado_registro !== 'all' || 
-           filters.estado_fisico !== 'all' || 
-           filters.min_precio || 
-           filters.max_precio || 
-           filters.min_superficie || 
-           filters.max_superficie
+           operacion || 
+           tipo > 0 || 
+           provincia > 0 || 
+           ciudad > 0 || 
+           barrio > 0 || 
+           moneda > 0 || 
+           precio[0] > 0 || 
+           precio[1] > 0 || 
+           estadoComercial > 0 || 
+           estadoFisico > 0 || 
+           estadoSituacion > 0 || 
+           estadoRegistro > 0 ||
+           superficie[0] > 0 || 
+           superficie[1] > 0 || 
+           ancho[0] > 0 || 
+           ancho[1] > 0 ||
+           largo[0] > 0 || 
+           largo[1] > 0 || 
+           antiguedad[1] > 0 || 
+           dormitorios[0] > 0 ||
+           banos[0] > 0 || 
+           caracts.length > 0;
   };
 
   if (loading) {
@@ -129,12 +248,12 @@ export default function AdminPage() {
 
   return (
     <main className="min-h-screen">
-      <Header variant="admin" onLogout={handleLogout} />
+      <Header variant="main" isAdminMode={true} onLogout={handleLogout} />
       
       {/* Hero Section - Solo HTML nativo y Tailwind */}
       <section className="relative bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
         <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6">Gestión de Propiedades</h1>
+          <h1 className="text-4xl md:text-5xl font-bold mb-6">Panel Admin</h1>
           <p className="text-xl mb-8 max-w-2xl mx-auto">
             Administra y visualiza todas las propiedades de Short Grupo Inmobiliario
           </p>
@@ -167,96 +286,106 @@ export default function AdminPage() {
                   <div>
                     <label className="text-sm font-medium text-white mb-2 block">Tipo de propiedad</label>
                     <select 
-                      value={filters.tipo_propiedad} 
-                      onChange={(e) => setFilters({...filters, tipo_propiedad: e.target.value})}
+                      value={tipo} 
+                      onChange={(e) => setTipo(Number(e.target.value))}
                       className="w-full px-3 py-2 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-white bg-white/10 text-white placeholder-white/70"
                     >
-                      <option value="all">Todos los tipos</option>
-                      <option value="1">Casa</option>
-                      <option value="2">Departamento</option>
-                      <option value="3">Terreno</option>
+                      <option value="0">Todos los tipos</option>
+                      {tiposProp.map(tp => (
+                        <option key={tp.id} value={tp.id}>{tp.nombre}</option>
+                      ))}
                     </select>
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-white mb-2 block">Estado comercial</label>
+                    <label className="text-sm font-medium text-white mb-2 block">Operación</label>
                     <select 
-                      value={filters.estado_comercial} 
-                      onChange={(e) => setFilters({...filters, estado_comercial: e.target.value})}
+                      value={operacion} 
+                      onChange={(e) => setOperacion(e.target.value)}
                       className="w-full px-3 py-2 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-white bg-white/10 text-white placeholder-white/70"
                     >
-                      <option value="all">Todos los estados</option>
-                      <option value="1">Disponible</option>
-                      <option value="2">Reservada</option>
-                      <option value="3">Vendida</option>
+                      <option value="">Todas las operaciones</option>
+                      <option value="venta">Venta</option>
+                      <option value="alquiler">Alquiler</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-white mb-2 block">Estado situación</label>
+                    <label className="text-sm font-medium text-white mb-2 block">Provincia</label>
                     <select 
-                      value={filters.estado_situacion} 
-                      onChange={(e) => setFilters({...filters, estado_situacion: e.target.value})}
+                      value={provincia} 
+                      onChange={(e) => setProvincia(Number(e.target.value))}
                       className="w-full px-3 py-2 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-white bg-white/10 text-white placeholder-white/70"
                     >
-                      <option value="all">Todos los estados</option>
-                      <option value="1">Disponible</option>
-                      <option value="2">Reservada</option>
-                      <option value="3">Vendida</option>
+                      <option value="0">Todas las provincias</option>
+                      {provincias.map(p => (
+                        <option key={p.id} value={p.id}>{p.nombre}</option>
+                      ))}
                     </select>
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-white mb-2 block">Estado registro</label>
+                    <label className="text-sm font-medium text-white mb-2 block">Ciudad</label>
                     <select 
-                      value={filters.estado_registro} 
-                      onChange={(e) => setFilters({...filters, estado_registro: e.target.value})}
+                      value={ciudad} 
+                      onChange={(e) => setCiudad(Number(e.target.value))}
                       className="w-full px-3 py-2 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-white bg-white/10 text-white placeholder-white/70"
                     >
-                      <option value="all">Todos los estados</option>
-                      <option value="1">Activa</option>                   <option value="2">Inactiva</option>
-                      <option value="3">Pendiente</option>
+                      <option value="0">Todas las ciudades</option>
+                      {ciudades.map(c => (
+                        <option key={c.id} value={c.id}>{c.nombre}</option>
+                      ))}
                     </select>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-white mb-2 block">Estado físico</label>
+                    <label className="text-sm font-medium text-white mb-2 block">Barrio</label>
                     <select 
-                      value={filters.estado_fisico} 
-                      onChange={(e) => setFilters({...filters, estado_fisico: e.target.value})}
+                      value={barrio} 
+                      onChange={(e) => setBarrio(Number(e.target.value))}
                       className="w-full px-3 py-2 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-white bg-white/10 text-white placeholder-white/70"
                     >
-                      <option value="all">Todos los estados</option>
-                      <option value="1">A estrenar</option>
-                      <option value="2">Excelente</option>
-                      <option value="3">Muy bueno</option>
-                      <option value="4">Bueno</option>
-                      <option value="5">Regular</option>
+                      <option value="0">Todos los barrios</option>
+                      {barrios.map(b => (
+                        <option key={b.id} value={b.id}>{b.nombre}</option>
+                      ))}
                     </select>
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-white mb-2 block">Precio mínimo</label>
-                    <input
-                      type="number"
-                      placeholder="0"
-                      value={filters.min_precio}
-                      onChange={(e) => setFilters({...filters, min_precio: e.target.value})}
+                    <label className="text-sm font-medium text-white mb-2 block">Moneda</label>
+                    <select 
+                      value={moneda} 
+                      onChange={(e) => setMoneda(Number(e.target.value))}
                       className="w-full px-3 py-2 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-white bg-white/10 text-white placeholder-white/70"
-                    />
+                    >
+                      <option value="0">Todas las monedas</option>
+                      {monedas.map(m => (
+                        <option key={m.id} value={m.id}>{m.nombre}</option>
+                      ))}
+                    </select>
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-white mb-2 block">Precio máximo</label>
-                    <input
-                      type="number"
-                      placeholder="Sin límite"
-                      value={filters.max_precio}
-                      onChange={(e) => setFilters({...filters, max_precio: e.target.value})}
-                      className="w-full px-3 py-2 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-white bg-white/10 text-white placeholder-white/70"
-                    />
+                    <label className="text-sm font-medium text-white mb-2 block">Precio</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="number"
+                        placeholder="Min"
+                        value={precio[0] || ''}
+                        onChange={(e) => setPrecio([Number(e.target.value) || 0, precio[1]])}
+                        className="w-full px-3 py-2 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-white bg-white/10 text-white placeholder-white/70"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Max"
+                        value={precio[1] || ''}
+                        onChange={(e) => setPrecio([precio[0], Number(e.target.value) || 0])}
+                        className="w-full px-3 py-2 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-white bg-white/10 text-white placeholder-white/70"
+                      />
+                    </div>
                   </div>
 
                   <div>
@@ -265,15 +394,15 @@ export default function AdminPage() {
                       <input
                         type="number"
                         placeholder="Min"
-                        value={filters.min_superficie}
-                        onChange={(e) => setFilters({...filters, min_superficie: e.target.value})}
+                        value={superficie[0] || ''}
+                        onChange={(e) => setSuperficie([Number(e.target.value) || 0, superficie[1]])}
                         className="w-full px-3 py-2 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-white bg-white/10 text-white placeholder-white/70"
                       />
                       <input
                         type="number"
                         placeholder="Max"
-                        value={filters.max_superficie}
-                        onChange={(e) => setFilters({...filters, max_superficie: e.target.value})}
+                        value={superficie[1] || ''}
+                        onChange={(e) => setSuperficie([superficie[0], Number(e.target.value) || 0])}
                         className="w-full px-3 py-2 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-white bg-white/10 text-white placeholder-white/70"
                       />
                     </div>
@@ -287,15 +416,15 @@ export default function AdminPage() {
                       <input
                         type="number"
                         placeholder="Min"
-                        value={filters.min_ancho || ''}
-                        onChange={(e) => setFilters({...filters, min_ancho: e.target.value})}
+                        value={ancho[0] || ''}
+                        onChange={(e) => setAncho([Number(e.target.value) || 0, ancho[1]])}
                         className="w-full px-3 py-2 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-white bg-white/10 text-white placeholder-white/70"
                       />
                       <input
                         type="number"
                         placeholder="Max"
-                        value={filters.max_ancho || ''}
-                        onChange={(e) => setFilters({...filters, max_ancho: e.target.value})}
+                        value={ancho[1] || ''}
+                        onChange={(e) => setAncho([ancho[0], Number(e.target.value) || 0])}
                         className="w-full px-3 py-2 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-white bg-white/10 text-white placeholder-white/70"
                       />
                     </div>
@@ -307,15 +436,15 @@ export default function AdminPage() {
                       <input
                         type="number"
                         placeholder="Min"
-                        value={filters.min_largo || ''}
-                        onChange={(e) => setFilters({...filters, min_largo: e.target.value})}
+                        value={largo[0] || ''}
+                        onChange={(e) => setLargo([Number(e.target.value) || 0, largo[1]])}
                         className="w-full px-3 py-2 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-white bg-white/10 text-white placeholder-white/70"
                       />
                       <input
                         type="number"
                         placeholder="Max"
-                        value={filters.max_largo || ''}
-                        onChange={(e) => setFilters({...filters, max_largo: e.target.value})}
+                        value={largo[1] || ''}
+                        onChange={(e) => setLargo([largo[0], Number(e.target.value) || 0])}
                         className="w-full px-3 py-2 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-white bg-white/10 text-white placeholder-white/70"
                       />
                     </div>
@@ -326,8 +455,8 @@ export default function AdminPage() {
                     <input
                       type="number"
                       placeholder="Máximo"
-                      value={filters.max_antiguedad || ''}
-                      onChange={(e) => setFilters({...filters, max_antiguedad: e.target.value})}
+                      value={antiguedad[1] || ''}
+                      onChange={(e) => setAntiguedad([antiguedad[0], Number(e.target.value) || 0])}
                       className="w-full px-3 py-2 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-white bg-white/10 text-white placeholder-white/70"
                     />
                   </div>
@@ -337,9 +466,150 @@ export default function AdminPage() {
                     <input
                       type="number"
                       placeholder="Mínimo"
-                      value={filters.min_dormitorios || ''}
-                      onChange={(e) => setFilters({...filters, min_dormitorios: e.target.value})}
+                      value={dormitorios[0] || ''}
+                      onChange={(e) => setDormitorios([Number(e.target.value) || 0, dormitorios[1]])}
                       className="w-full px-3 py-2 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-white bg-white/10 text-white placeholder-white/70"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-white mb-2 block">Baños</label>
+                    <input
+                      type="number"
+                      placeholder="Mínimo"
+                      value={banos[0] || ''}
+                      onChange={(e) => setBanos([Number(e.target.value) || 0, banos[1]])}
+                      className="w-full px-3 py-2 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-white bg-white/10 text-white placeholder-white/70"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-white mb-2 block">Estado comercial</label>
+                    <select 
+                      value={estadoComercial} 
+                      onChange={(e) => setEstadoComercial(Number(e.target.value))}
+                      className="w-full px-3 py-2 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-white bg-white/10 text-white placeholder-white/70"
+                    >
+                      <option value="0">Todos los estados</option>
+                      {estCom.map(ec => (
+                        <option key={ec.id} value={ec.id}>{ec.nombre}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-white mb-2 block">Estado físico</label>
+                    <select 
+                      value={estadoFisico} 
+                      onChange={(e) => setEstadoFisico(Number(e.target.value))}
+                      className="w-full px-3 py-2 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-white bg-white/10 text-white placeholder-white/70"
+                    >
+                      <option value="0">Todos los estados</option>
+                      {estFis.map(ef => (
+                        <option key={ef.id} value={ef.id}>{ef.nombre}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-white mb-2 block">Estado situación</label>
+                    <select 
+                      value={estadoSituacion} 
+                      onChange={(e) => setEstadoSituacion(Number(e.target.value))}
+                      className="w-full px-3 py-2 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-white bg-white/10 text-white placeholder-white/70"
+                    >
+                      <option value="0">Todos los estados</option>
+                      {estSit.map(es => (
+                        <option key={es.id} value={es.id}>{es.nombre}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-white mb-2 block">Estado registro</label>
+                    <select 
+                      value={estadoRegistro} 
+                      onChange={(e) => setEstadoRegistro(Number(e.target.value))}
+                      className="w-full px-3 py-2 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-white bg-white/10 text-white placeholder-white/70"
+                    >
+                      <option value="0">Todos los estados</option>
+                      {estReg.map(er => (
+                        <option key={er.id} value={er.id}>{er.nombre}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className="lg:col-span-3">
+                    <label className="text-sm font-medium text-white mb-2 block">Características</label>
+                    <Select
+                      isMulti
+                      options={caracteristicas.map(c => ({ value: c.id, label: c.nombre }))}
+                      value={caracts.map(id => ({ value: id, label: caracteristicas.find(c => c.id === id)?.nombre || '' }))}
+                      onChange={(selected) => setCaracts(selected ? selected.map(s => s.value) : [])}
+                      placeholder="Seleccionar características"
+                      className="w-full"
+                      styles={{
+                        control: (provided, state) => ({
+                          ...provided,
+                          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                          border: '1px solid rgba(255, 255, 255, 0.3)',
+                          borderRadius: '6px',
+                          minHeight: '44px',
+                          boxShadow: state.isFocused ? '0 0 0 2px rgba(255, 255, 255, 0.5)' : 'none',
+                          '&:hover': {
+                            border: '1px solid rgba(255, 255, 255, 0.5)'
+                          }
+                        }),
+                        menu: (provided) => ({
+                          ...provided,
+                          backgroundColor: 'white',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '6px',
+                          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                        }),
+                        option: (provided, state) => ({
+                          ...provided,
+                          backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#f3f4f6' : 'white',
+                          color: state.isSelected ? 'white' : '#374151',
+                          '&:hover': {
+                            backgroundColor: state.isSelected ? '#3b82f6' : '#f3f4f6'
+                          }
+                        }),
+                        multiValue: (provided) => ({
+                          ...provided,
+                          backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                          borderRadius: '4px'
+                        }),
+                        multiValueLabel: (provided) => ({
+                          ...provided,
+                          color: 'white',
+                          fontWeight: '500'
+                        }),
+                        multiValueRemove: (provided) => ({
+                          ...provided,
+                          color: 'white',
+                          '&:hover': {
+                            backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                            color: 'white'
+                          }
+                        }),
+                        placeholder: (provided) => ({
+                          ...provided,
+                          color: 'rgba(255, 255, 255, 0.7)'
+                        }),
+                        singleValue: (provided) => ({
+                          ...provided,
+                          color: 'white'
+                        }),
+                        input: (provided) => ({
+                          ...provided,
+                          color: 'white'
+                        })
+                      }}
                     />
                   </div>
                 </div>
