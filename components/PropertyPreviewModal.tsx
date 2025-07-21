@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   X, 
@@ -54,11 +54,31 @@ export function PropertyPreviewModal({
   const [isMapLoaded, setIsMapLoaded] = useState(false)
   const [showImageModal, setShowImageModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [hasStreetView, setHasStreetView] = useState(false);
+  const svCheckedRef = useRef(false);
 
   // Resetear índice de imagen cuando cambia la propiedad
   useEffect(() => {
     setCurrentImageIndex(0)
   }, [property?.id])
+
+  useEffect(() => {
+    setHasStreetView(false);
+    svCheckedRef.current = false;
+    if (property?.direccion?.latitud && property?.direccion?.longitud && (window as any).google && (window as any).google.maps) {
+      const sv = (window as any).google.maps.StreetViewService();
+      const lat = Number(property.direccion.latitud);
+      const lng = Number(property.direccion.longitud);
+      sv.getPanorama({ location: { lat, lng }, radius: 50 }, (data: any, status: string) => {
+        if (status === 'OK') {
+          setHasStreetView(true);
+        } else {
+          setHasStreetView(false);
+        }
+        svCheckedRef.current = true;
+      });
+    }
+  }, [property?.direccion?.latitud, property?.direccion?.longitud]);
 
   // Si es móvil, renderizar la versión móvil
   if (isMobile) {
@@ -283,28 +303,55 @@ export function PropertyPreviewModal({
                         </div>
                       )}
                     </div>
-                    {/* Mapa (igual que antes) */}
-                    <div className="h-[300px] bg-gray-100 relative">
-                      {property.direccion?.latitud && property.direccion?.longitud ? (
-                        <iframe
-                          src={getGoogleMapsEmbedUrl(property.direccion.latitud, property.direccion.longitud)}
-                          width="100%"
-                          height="100%"
-                          style={{ border: 0 }}
-                          allowFullScreen
-                          loading="lazy"
-                          referrerPolicy="no-referrer-when-downgrade"
-                          className="rounded-b-lg"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-500">
-                          <div className="text-center">
-                            <MapPin className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                            <p>Ubicación no disponible</p>
+                    {/* Mapa y Street View en columnas (vertical si hay streetview, solo mapa si no) */}
+                    {property.direccion?.latitud && property.direccion?.longitud ? (
+                      hasStreetView ? (
+                        <div className="flex flex-row h-[300px]">
+                          <div className="flex-1 bg-gray-100 rounded relative overflow-hidden" style={{ flexBasis: '60%' }}>
+                            <iframe
+                              src={getGoogleMapsEmbedUrl(property.direccion.latitud, property.direccion.longitud)}
+                              width="100%"
+                              height="100%"
+                              style={{ border: 0 }}
+                              allowFullScreen
+                              loading="lazy"
+                              referrerPolicy="no-referrer-when-downgrade"
+                              className="rounded"
+                            />
+                          </div>
+                          <div className="bg-gray-100 relative overflow-hidden" style={{ flexBasis: '40%' }}>
+                            <iframe
+                              width="100%"
+                              height="100%"
+                              src={`https://www.google.com/maps?q=&layer=c&cbll=${property.direccion.latitud},${property.direccion.longitud}&cbp=11,0,0,0,0&z=17&t=m&output=svembed`}
+                              allowFullScreen
+                              loading="lazy"
+                              referrerPolicy="no-referrer-when-downgrade"
+                            />
                           </div>
                         </div>
-                      )}
-                    </div>
+                      ) : (
+                        <div className="h-[300px] bg-gray-100 rounded relative overflow-hidden">
+                          <iframe
+                            src={getGoogleMapsEmbedUrl(property.direccion.latitud, property.direccion.longitud)}
+                            width="100%"
+                            height="100%"
+                            style={{ border: 0 }}
+                            allowFullScreen
+                            loading="lazy"
+                            referrerPolicy="no-referrer-when-downgrade"
+                            className="rounded"
+                          />
+                        </div>
+                      )
+                    ) : (
+                      <div className="h-[300px] bg-gray-100 rounded relative overflow-hidden flex items-center justify-center text-gray-500">
+                        <div className="text-center">
+                          <MapPin className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+                          <p>Ubicación no disponible</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   {/* Columna derecha: precio, estados, contactos (igual que antes) */}
                   <div className="w-96 bg-white border-l border-gray-200 overflow-y-auto">
