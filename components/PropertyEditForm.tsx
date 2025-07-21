@@ -288,7 +288,8 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
     try {
       // Obtener las imágenes marcadas para eliminar
       const imagesToDelete = (window as any).ImageUploaderRef?.getImagesToDelete() || []
-      
+      // Si se va a enviar latitud o longitud, asegúrate de enviar también los campos de dirección requeridos
+      const needsDireccionCompleta = form.latitud || form.longitud;
       const updateData = {
         tipo_propiedad_id: form.tipo_propiedad_id,
         estado_comercial_id: form.estado_comercial_id,
@@ -306,21 +307,20 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
         banos: form.banos || undefined,
         direccion_id: property.direccion?.id,
         id_moneda: form.id_moneda,
-        caracteristicas: Array.isArray(form.caracteristicas) ? form.caracteristicas.map(id => ({ id })) : [],
-        propietarios: Array.isArray(form.propietarios) ? form.propietarios.map(id => ({ id })) : [],
-        // Solo enviar campos de dirección si se están modificando
+        caracteristicas: Array.isArray(form.caracteristicas) ? form.caracteristicas : [],
+        propietarios: Array.isArray(form.propietarios) ? form.propietarios : [],
+        ...(needsDireccionCompleta && { provincia_id: form.provincia_id, ciudad_id: form.ciudad_id, calle: form.calle, numero: form.numero }),
         ...(form.calle !== property.direccion?.calle && { calle: form.calle }),
         ...(form.numero !== property.direccion?.numero && { numero: form.numero }),
-        ...(form.piso !== property.direccion?.piso && { piso: form.piso }),
-        ...(form.departamento !== property.direccion?.departamento && { departamento: form.departamento }),
-        ...(form.latitud !== property.direccion?.latitud && { latitud: form.latitud }),
-        ...(form.longitud !== property.direccion?.longitud && { longitud: form.longitud }),
-        // Siempre enviar los nuevos campos (incluso si están vacíos)
-        unidad_funcional: form.unidad_funcional !== undefined ? form.unidad_funcional : undefined,
-        manzana: form.manzana !== undefined ? form.manzana : undefined,
-        parcela: form.parcela !== undefined ? form.parcela : undefined
+        ...(form.piso !== property.direccion?.piso && { piso: form.piso || undefined }),
+        ...(form.departamento !== property.direccion?.departamento && { departamento: form.departamento || undefined }),
+        ...(form.latitud !== property.direccion?.latitud && { latitud: form.latitud ? parseFloat(form.latitud) : undefined }),
+        ...(form.longitud !== property.direccion?.longitud && { longitud: form.longitud ? parseFloat(form.longitud) : undefined }),
+        unidad_funcional: form.unidad_funcional || undefined,
+        manzana: form.manzana || undefined,
+        parcela: form.parcela || undefined
       };
-      
+      console.log('Payload a guardar (edición):', updateData);
       await propiedades.update(property.id, updateData)
       
       // Si se están actualizando campos de dirección específicos, usar el endpoint específico

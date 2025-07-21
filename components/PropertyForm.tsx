@@ -240,7 +240,7 @@ export function PropertyForm({ onSuccess, onCancel }: PropertyFormProps) {
     }
     setFormError(null);
     try {
-      const { id: propId } = await propiedades.create({
+      const payload = {
         tipo_propiedad_id: form.tipo_propiedad_id,
         estado_comercial_id: form.estado_comercial_id,
         estado_situacion_id: form.estado_situacion_id,
@@ -270,7 +270,9 @@ export function PropertyForm({ onSuccess, onCancel }: PropertyFormProps) {
         unidad_funcional: form.unidad_funcional !== undefined ? form.unidad_funcional : undefined,
         manzana: form.manzana !== undefined ? form.manzana : undefined,
         parcela: form.parcela !== undefined ? form.parcela : undefined
-      })
+      };
+      console.log('Payload a guardar:', payload);
+      const { id: propId } = await propiedades.create(payload)
       if (uploadedImages.length > 0) {
         await propiedades.uploadImages(propId, uploadedImages)
       }

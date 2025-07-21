@@ -31,6 +31,9 @@ export function SharePropertyModal({ property, isOpen, onClose }: SharePropertyM
   // Generar mensaje para compartir con información real
   const shareMessage = `¡Mira esta propiedad! ${property.titulo} - ${property.precio} ${property.moneda?.simbolo} en ${property.direccion?.barrio || property.direccion?.ciudad}`
 
+  // Detectar si es mobile
+  const isMobile = typeof window !== 'undefined' && /Mobi|Android|iPhone/i.test(navigator.userAgent);
+
   const shareOptions = [
     {
       name: 'WhatsApp',
@@ -64,30 +67,6 @@ export function SharePropertyModal({ property, isOpen, onClose }: SharePropertyM
           const body = encodeURIComponent(`${shareMessage}\n\nVer más detalles: ${propertyUrl}`)
           const url = `mailto:?subject=${subject}&body=${body}`
           window.open(url)
-        }
-      }
-    },
-    {
-      name: 'Copiar Link',
-      icon: copied ? Check : Copy,
-      color: copied ? 'bg-green-500' : 'bg-purple-500 hover:bg-purple-600',
-      action: async () => {
-        if (typeof window !== 'undefined' && navigator.clipboard) {
-          try {
-            await navigator.clipboard.writeText(propertyUrl)
-            setCopied(true)
-            toast({
-              title: "Link copiado",
-              description: "El enlace de la propiedad se copió al portapapeles",
-            })
-            setTimeout(() => setCopied(false), 2000)
-          } catch (error) {
-            toast({
-              title: "Error",
-              description: "No se pudo copiar el enlace",
-              variant: "destructive",
-            })
-          }
         }
       }
     },
@@ -158,7 +137,7 @@ export function SharePropertyModal({ property, isOpen, onClose }: SharePropertyM
                     className={`${option.color} text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center`}
                   >
                     <option.icon className="h-10 w-10 mr-2" />
-                    {option.name}
+                    <span className={option.name === 'Facebook' ? 'ml-[10px]' : ''}>{option.name}</span>
                   </button>
                 ))}
               </div>

@@ -190,8 +190,8 @@ export function TasacionesSection() {
           >
             <div className="relative">
               {/* Elementos decorativos */}
-              <div className="absolute -top-8 -left-8 w-32 h-32 bg-blue-200 rounded-full opacity-20"></div>
-              <div className="absolute -bottom-8 -right-8 w-24 h-24 bg-green-200 rounded-full opacity-20"></div>
+              <div className="absolute -top-8 -left-8 w-32 h-32 bg-blue-200 rounded-full opacity-20 hidden md:block"></div>
+              <div className="absolute -bottom-8 -right-8 w-24 h-24 bg-green-200 rounded-full opacity-20 hidden md:block"></div>
               
               {/* Imagen principal */}
               <div className="relative bg-white rounded-2xl overflow-hidden shadow-2xl">
@@ -226,7 +226,7 @@ export function TasacionesSection() {
               </div>
 
               {/* Tarjeta flotante */}
-              <div className="absolute -top-6 -right-6 bg-white rounded-xl p-4 shadow-lg border border-gray-100">
+              <div className="absolute top-2 left-2 md:-top-6 md:-right-6 md:left-auto bg-white rounded-xl p-3 md:p-4 shadow-lg border border-gray-100">
                 <div className="flex items-center gap-3">
                   <div className="bg-blue-100 p-2 rounded-lg">
                     <Scale className="h-6 w-6 text-blue-600" />

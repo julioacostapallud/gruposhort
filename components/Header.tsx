@@ -3,7 +3,7 @@ import NextImage from "next/image"
 import { useSelector, useDispatch } from "react-redux"
 import { RootState } from "@/lib/store/store"
 import { logoutUser } from "@/lib/store/authSlice"
-import { User, LogOut, X, Phone, Mail, MapPin, Power } from "lucide-react"
+import { User, LogOut, X, Phone, Mail, MapPin, Power, Home, FileText, Users, LayoutDashboard, Gavel, Handshake } from "lucide-react"
 import { useState } from "react"
 import { solicitudes } from "@/lib/services/solicitudes"
 import { useToast } from "@/hooks/use-toast"
@@ -77,7 +77,7 @@ export function Header({
       <div className="flex items-center justify-between p-4 w-full">
         <div className="flex items-center flex-shrink-0">
           <a href="/">
-            <img src="/Logo.svg" alt="Short Grupo Inmobiliario" className="h-14 w-auto" />
+            <img src="/Logo.svg" alt="Short Grupo Inmobiliario" className="h-10 md:h-14 w-auto" />
           </a>
         </div>
         <div className="flex items-center space-x-4">
@@ -98,7 +98,8 @@ export function Header({
                 onClick={() => setShowContactModal(true)}
                 className="md:hidden text-gray-700 hover:text-blue-600 transition-colors font-medium text-sm px-3 py-1 border border-gray-300 rounded-md"
               >
-                Asóciate
+                <span className="block md:hidden">Contactanos</span>
+                <span className="hidden md:block">Asóciate</span>
               </button>
             </>
           )}
@@ -106,16 +107,18 @@ export function Header({
           {isAdminMode && isAdmin && (
             <nav className="flex items-center gap-2">
               <button
-                className={`px-4 py-2 rounded-md font-medium transition-colors ${adminTab === 'panel' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-50'}`}
+                className={`px-4 py-2 rounded-md font-medium transition-colors flex items-center gap-2` + (adminTab === 'panel' ? ' bg-blue-600 text-white' : ' bg-gray-100 text-gray-700 hover:bg-blue-50')}
                 onClick={() => onChangeAdminTab && onChangeAdminTab('panel')}
               >
-                Panel Admin
+                <span className="block md:hidden"><LayoutDashboard className="h-5 w-5" /></span>
+                <span className="hidden md:block">Panel Admin</span>
               </button>
               <button
-                className={`px-4 py-2 rounded-md font-medium transition-colors flex items-center gap-2 ${adminTab === 'tasaciones' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-50'}`}
+                className={`px-4 py-2 rounded-md font-medium transition-colors flex items-center gap-2` + (adminTab === 'tasaciones' ? ' bg-blue-600 text-white' : ' bg-gray-100 text-gray-700 hover:bg-blue-50')}
                 onClick={() => onChangeAdminTab && onChangeAdminTab('tasaciones')}
               >
-                Solicitudes de Tasación
+                <span className="block md:hidden"><Gavel className="h-5 w-5" /></span>
+                <span className="hidden md:block">Solicitudes de Tasación</span>
                 {tasacionesPendientes > 0 && (
                   <span className="ml-1 bg-red-600 text-white text-xs font-bold rounded-full px-2 py-0.5">
                     {tasacionesPendientes}
@@ -123,10 +126,11 @@ export function Header({
                 )}
               </button>
               <button
-                className={`px-4 py-2 rounded-md font-medium transition-colors flex items-center gap-2 ${adminTab === 'venderAlquilar' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-50'}`}
+                className={`px-4 py-2 rounded-md font-medium transition-colors flex items-center gap-2` + (adminTab === 'venderAlquilar' ? ' bg-blue-600 text-white' : ' bg-gray-100 text-gray-700 hover:bg-blue-50')}
                 onClick={() => onChangeAdminTab && onChangeAdminTab('venderAlquilar')}
               >
-                Solicitudes de Ventas y Alquiler
+                <span className="block md:hidden"><Handshake className="h-5 w-5" /></span>
+                <span className="hidden md:block">Solicitudes de Ventas y Alquiler</span>
                 {ventasPendientes > 0 && (
                   <span className="ml-1 bg-red-600 text-white text-xs font-bold rounded-full px-2 py-0.5">
                     {ventasPendientes}

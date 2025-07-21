@@ -35,6 +35,7 @@ import { Propiedad } from '@/lib/services/propiedades'
 import { getGoogleMapsEmbedUrl } from '@/lib/config/maps'
 import { SharePropertyModal } from './SharePropertyModal'
 import { generatePropertyUrl } from '@/lib/utils'
+import { Carousel, CarouselContent, CarouselItem } from './ui/carousel'
 
 interface PropertyPreviewModalMobileProps {
   property: Propiedad | null
@@ -96,6 +97,8 @@ export function PropertyPreviewModalMobile({
     })
   }
 
+  const chatMsg = `¡Hola! Me interesa esta propiedad: ${property.titulo} - ${formatPrice(property.precio, property.moneda)} en ${property.direccion?.barrio || property.direccion?.ciudad}. ¿Podrían enviarme más información?\n\nVer propiedad: ${generatePropertyUrl(property)}`;
+
   return (
     <>
       {/* Modal de imagen fullscreen */}
@@ -108,29 +111,23 @@ export function PropertyPreviewModalMobile({
           >
             <X className="h-6 w-6 text-gray-800" />
           </button>
-          <button
-            className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow-lg z-50"
-            onClick={e => { e.stopPropagation(); prevImage(); }}
-            aria-label="Anterior"
-          >
-            <ChevronLeft className="h-6 w-6 text-gray-800" />
-          </button>
-          <button
-            className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow-lg z-50"
-            onClick={e => { e.stopPropagation(); nextImage(); }}
-            aria-label="Siguiente"
-          >
-            <ChevronRight className="h-6 w-6 text-gray-800" />
-          </button>
           <div className="flex flex-col items-center justify-center w-full h-full px-4">
-            <img
-              src={images[currentImageIndex]}
-              alt="Preview"
-              className="max-h-[70vh] max-w-full object-contain rounded-lg"
-            />
-            <div className="mt-4 text-white text-base bg-black/60 px-3 py-1 rounded-full">
-              {currentImageIndex + 1} / {images.length}
-            </div>
+            <Carousel opts={{ loop: true, startIndex: currentImageIndex }}>
+              <CarouselContent>
+                {images.map((img, idx) => (
+                  <CarouselItem key={img}>
+                    <img
+                      src={img}
+                      alt="Preview"
+                      className="max-h-[80vh] max-w-full object-contain rounded-lg mx-auto"
+                    />
+                    <div className="mt-4 text-white text-base bg-black/60 px-3 py-1 rounded-full text-center">
+                      {idx + 1} / {images.length}
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+            </Carousel>
           </div>
         </div>
       )}
@@ -149,13 +146,13 @@ export function PropertyPreviewModalMobile({
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="relative w-full h-full flex flex-col"
+              className="relative w-full h-full flex flex-col mx-auto"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
               <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
                 <div className="flex items-center space-x-3">
-                  <img src="/Logo.svg" alt="Short Grupo Inmobiliario" className="h-14 w-auto" />
+                  <img src="/Logo.svg" alt="Short Grupo Inmobiliario" className="h-10 w-auto" />
                 </div>
                 <button
                   onClick={onClose}
@@ -168,48 +165,34 @@ export function PropertyPreviewModalMobile({
                              {/* Image Gallery */}
                <div className="relative h-[200px] bg-gray-100" onClick={() => setShowImageModal(true)}>
                 {images.length > 0 ? (
-                  <>
-                    <div className="w-full h-full flex items-center justify-center relative">
-                      <NextImage
-                        src={images[currentImageIndex]}
-                        alt={property.titulo}
-                        width={400}
-                        height={200}
-                        className="w-full h-full object-cover"
-                      />
-                      <img
-                        src="/Logo.svg"
-                        alt="Marca de agua Short"
-                        className="absolute bottom-0 right-0 opacity-50 pointer-events-none select-none w-40 h-auto drop-shadow-[0_0_8px_white] p-1"
-                        style={{ zIndex: 2 }}
-                      />
-                    </div>
-                    
-                    {/* Navigation Arrows */}
-                    {hasMultipleImages && (
-                      <>
-                        <button
-                          onClick={e => { e.stopPropagation(); prevImage(); }}
-                          className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2 rounded-full shadow-lg"
-                        >
-                          <ChevronLeft className="h-5 w-5 text-gray-800" />
-                        </button>
-                        <button
-                          onClick={e => { e.stopPropagation(); nextImage(); }}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2 rounded-full shadow-lg"
-                        >
-                          <ChevronRight className="h-5 w-5 text-gray-800" />
-                        </button>
-                      </>
-                    )}
-                    
-                    {/* Image Counter */}
-                    {hasMultipleImages && (
-                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/70 text-white px-2 py-1 rounded-full text-xs">
-                        {currentImageIndex + 1} / {images.length}
-                      </div>
-                    )}
-                  </>
+                  <Carousel opts={{ loop: true }}>
+                    <CarouselContent>
+                      {images.map((img, idx) => (
+                        <CarouselItem key={img}>
+                          <div className="w-full h-[200px] flex items-center justify-center relative">
+                            <NextImage
+                              src={img}
+                              alt={property.titulo}
+                              width={400}
+                              height={200}
+                              className="w-full h-full object-cover"
+                            />
+                            <img
+                              src="/Logo.svg"
+                              alt="Marca de agua Short"
+                              className="absolute bottom-0 right-0 opacity-50 pointer-events-none select-none w-40 h-auto drop-shadow-[0_0_8px_white] p-1"
+                              style={{ zIndex: 2 }}
+                            />
+                            {hasMultipleImages && (
+                              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/70 text-white px-2 py-1 rounded-full text-xs">
+                                {idx + 1} / {images.length}
+                              </div>
+                            )}
+                          </div>
+                        </CarouselItem>
+                      ))}
+                    </CarouselContent>
+                  </Carousel>
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-500">
                     <div className="text-center">
@@ -388,7 +371,7 @@ export function PropertyPreviewModalMobile({
                           </span>
                           <div className="flex items-center">
                             <a 
-                              href={`https://wa.me/5493624727330?text=${encodeURIComponent(`¡Hola! Me interesa esta propiedad: ${property.titulo} - ${formatPrice(property.precio, property.moneda)} en ${property.direccion?.barrio || property.direccion?.ciudad}. ¿Podrían enviarme más información?\n\nVer propiedad: ${generatePropertyUrl(property)}`)}`}
+                              href={`https://wa.me/5493624727330?text=${encodeURIComponent(chatMsg)}`}
                               target="_blank" 
                               rel="noopener noreferrer"
                               className="hover:scale-110 transition-transform duration-200"
@@ -397,7 +380,7 @@ export function PropertyPreviewModalMobile({
                               <WhatsAppIcon />
                             </a>
                             <a 
-                              href={`https://t.me/share/url?url=${encodeURIComponent(generatePropertyUrl(property))}&text=${encodeURIComponent(`¡Hola! Me interesa esta propiedad: ${property.titulo} - ${formatPrice(property.precio, property.moneda)} en ${property.direccion?.barrio || property.direccion?.ciudad}. ¿Más información?`)}`}
+                              href={`https://t.me/shortgrupoinmobiliario?text=${encodeURIComponent(chatMsg)}`}
                               target="_blank" 
                               rel="noopener noreferrer"
                               className="hover:scale-110 transition-transform duration-200"
@@ -405,20 +388,20 @@ export function PropertyPreviewModalMobile({
                             >
                               <TelegramIcon />
                             </a>
-                            <a 
-                              href={`https://www.instagram.com/short.grupoinmobiliario?text=${encodeURIComponent(`¡Hola! Me interesa esta propiedad: ${property.titulo} - ${formatPrice(property.precio, property.moneda)} en ${property.direccion?.barrio || property.direccion?.ciudad}. ¿Podrían enviarme más información?\n\nVer propiedad: ${generatePropertyUrl(property)}`)}`}
-                              target="_blank" 
+                            <a
+                              href="https://www.instagram.com/short.grupoinmobiliario/"
+                              target="_blank"
                               rel="noopener noreferrer"
-                              className="hover:scale-110 transition-transform duration-200"
+                              className="hover:scale-110 transition-transform duration-200 ml-2"
                               title="Instagram"
                             >
                               <InstagramIcon />
                             </a>
-                            <a 
-                              href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(generatePropertyUrl(property))}&quote=${encodeURIComponent(`¡Hola! Me interesa esta propiedad: ${property.titulo} - ${formatPrice(property.precio, property.moneda)} en ${property.direccion?.barrio || property.direccion?.ciudad}. ¿Podrían enviarme más información?`)}`}
-                              target="_blank" 
+                            <a
+                              href="https://www.facebook.com/profile.php?id=100077725346540"
+                              target="_blank"
                               rel="noopener noreferrer"
-                              className="hover:scale-110 transition-transform duration-200"
+                              className="hover:scale-110 transition-transform duration-200 ml-2"
                               title="Facebook"
                             >
                               <FacebookIcon />

@@ -35,6 +35,7 @@ import { useIsMobile } from '@/hooks/use-mobile'
 import { PropertyPreviewModalMobile } from './PropertyPreviewModalMobile'
 import { SharePropertyModal } from './SharePropertyModal'
 import { generatePropertyUrl } from '@/lib/utils'
+import { useToast } from "@/hooks/use-toast";
 
 interface PropertyPreviewModalProps {
   property: Propiedad | null
@@ -56,6 +57,7 @@ export function PropertyPreviewModal({
   const [showShareModal, setShowShareModal] = useState(false);
   const [hasStreetView, setHasStreetView] = useState(false);
   const svCheckedRef = useRef(false);
+  const { toast } = useToast();
 
   // Resetear índice de imagen cuando cambia la propiedad
   useEffect(() => {
@@ -69,7 +71,7 @@ export function PropertyPreviewModal({
       const sv = (window as any).google.maps.StreetViewService();
       const lat = Number(property.direccion.latitud);
       const lng = Number(property.direccion.longitud);
-      sv.getPanorama({ location: { lat, lng }, radius: 50 }, (data: any, status: string) => {
+      sv.getPanorama({ location: { lat, lng }, radius: 150 }, (data: any, status: string) => {
         if (status === 'OK') {
           setHasStreetView(true);
         } else {
@@ -140,6 +142,9 @@ export function PropertyPreviewModal({
       year: 'numeric' 
     })
   }
+
+  // Mensaje prellenado para todos los chats
+  const chatMsg = `¡Hola! Me interesa esta propiedad: ${property.titulo} - ${formatPrice(property.precio, property.moneda)} en ${property.direccion?.barrio || property.direccion?.ciudad}. ¿Podrían enviarme más información?\n\nVer propiedad: ${generatePropertyUrl(property)}`;
 
   return (
     <>
@@ -239,13 +244,20 @@ export function PropertyPreviewModal({
                     <div className="relative h-[400px] bg-blue-600 cursor-pointer" onClick={() => setShowImageModal(true)}>
                       {images.length > 0 ? (
                         <>
-                          <div className="w-full h-full flex items-center justify-center">
+                          <div className="w-full h-full flex items-center justify-center relative">
                             <NextImage
                               src={images[currentImageIndex]}
                               alt={property.titulo}
                               width={800}
                               height={600}
                               className="max-w-full max-h-full object-contain"
+                            />
+                            {/* Marca de agua centrada arriba */}
+                            <img
+                              src="/Logo.svg"
+                              alt="Marca de agua Short"
+                              className="absolute top-0 left-1/2 -translate-x-1/2 mt-2 opacity-50 pointer-events-none select-none w-32 h-auto drop-shadow-[0_0_8px_white]"
+                              style={{ zIndex: 2 }}
                             />
                           </div>
                           {/* Navigation Arrows, Counter, Thumbnails (igual que antes) */}
@@ -303,47 +315,20 @@ export function PropertyPreviewModal({
                         </div>
                       )}
                     </div>
-                    {/* Mapa y Street View en columnas (vertical si hay streetview, solo mapa si no) */}
+                    {/* Mapa (solo mapa tradicional, sin streetview) */}
                     {property.direccion?.latitud && property.direccion?.longitud ? (
-                      hasStreetView ? (
-                        <div className="flex flex-row h-[300px]">
-                          <div className="flex-1 bg-gray-100 rounded relative overflow-hidden" style={{ flexBasis: '60%' }}>
-                            <iframe
-                              src={getGoogleMapsEmbedUrl(property.direccion.latitud, property.direccion.longitud)}
-                              width="100%"
-                              height="100%"
-                              style={{ border: 0 }}
-                              allowFullScreen
-                              loading="lazy"
-                              referrerPolicy="no-referrer-when-downgrade"
-                              className="rounded"
-                            />
-                          </div>
-                          <div className="bg-gray-100 relative overflow-hidden" style={{ flexBasis: '40%' }}>
-                            <iframe
-                              width="100%"
-                              height="100%"
-                              src={`https://www.google.com/maps?q=&layer=c&cbll=${property.direccion.latitud},${property.direccion.longitud}&cbp=11,0,0,0,0&z=17&t=m&output=svembed`}
-                              allowFullScreen
-                              loading="lazy"
-                              referrerPolicy="no-referrer-when-downgrade"
-                            />
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="h-[300px] bg-gray-100 rounded relative overflow-hidden">
-                          <iframe
-                            src={getGoogleMapsEmbedUrl(property.direccion.latitud, property.direccion.longitud)}
-                            width="100%"
-                            height="100%"
-                            style={{ border: 0 }}
-                            allowFullScreen
-                            loading="lazy"
-                            referrerPolicy="no-referrer-when-downgrade"
-                            className="rounded"
-                          />
-                        </div>
-                      )
+                      <div className="h-[300px] bg-gray-100 rounded relative overflow-hidden">
+                        <iframe
+                          src={getGoogleMapsEmbedUrl(property.direccion.latitud, property.direccion.longitud)}
+                          width="100%"
+                          height="100%"
+                          style={{ border: 0 }}
+                          allowFullScreen
+                          loading="lazy"
+                          referrerPolicy="no-referrer-when-downgrade"
+                          className="rounded"
+                        />
+                      </div>
                     ) : (
                       <div className="h-[300px] bg-gray-100 rounded relative overflow-hidden flex items-center justify-center text-gray-500">
                         <div className="text-center">
@@ -401,9 +386,10 @@ export function PropertyPreviewModal({
                             <span className="text-sm font-medium text-gray-700">
                               Consultanos por:
                             </span>
-                            <div className="flex items-center">
+                            <div className="flex items-center gap-2">
+                              {/* WhatsApp */}
                               <a 
-                                href={`https://wa.me/5493624727330?text=${encodeURIComponent(`¡Hola! Me interesa esta propiedad: ${property.titulo} - ${formatPrice(property.precio, property.moneda)} en ${property.direccion?.barrio || property.direccion?.ciudad}. ¿Podrían enviarme más información?\n\nVer propiedad: ${generatePropertyUrl(property)}`)}`}
+                                href={`https://wa.me/5493624727330?text=${encodeURIComponent(chatMsg)}`}
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 className="hover:scale-110 transition-transform duration-200"
@@ -411,8 +397,9 @@ export function PropertyPreviewModal({
                               >
                                 <WhatsAppIcon />
                               </a>
+                              {/* Telegram (chat directo) */}
                               <a 
-                                href={`https://t.me/share/url?url=${encodeURIComponent(generatePropertyUrl(property))}&text=${encodeURIComponent(`¡Hola! Me interesa esta propiedad: ${property.titulo} - ${formatPrice(property.precio, property.moneda)} en ${property.direccion?.barrio || property.direccion?.ciudad}. ¿Más información?`)}`}
+                                href={`https://t.me/shortgrupoinmobiliario?text=${encodeURIComponent(chatMsg)}`}
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 className="hover:scale-110 transition-transform duration-200"
@@ -420,20 +407,22 @@ export function PropertyPreviewModal({
                               >
                                 <TelegramIcon />
                               </a>
-                              <a 
-                                href={`https://www.instagram.com/short.grupoinmobiliario?text=${encodeURIComponent(`¡Hola! Me interesa esta propiedad: ${property.titulo} - ${formatPrice(property.precio, property.moneda)} en ${property.direccion?.barrio || property.direccion?.ciudad}. ¿Podrían enviarme más información?\n\nVer propiedad: ${generatePropertyUrl(property)}`)}`}
-                                target="_blank" 
+                              {/* Instagram (perfil) */}
+                              <a
+                                href="https://www.instagram.com/short.grupoinmobiliario/"
+                                target="_blank"
                                 rel="noopener noreferrer"
-                                className="hover:scale-110 transition-transform duration-200"
+                                className="hover:scale-110 transition-transform duration-200 ml-2"
                                 title="Instagram"
                               >
                                 <InstagramIcon />
                               </a>
-                              <a 
-                                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(generatePropertyUrl(property))}&quote=${encodeURIComponent(`¡Hola! Me interesa esta propiedad: ${property.titulo} - ${formatPrice(property.precio, property.moneda)} en ${property.direccion?.barrio || property.direccion?.ciudad}. ¿Podrían enviarme más información?`)}`}
-                                target="_blank" 
+                              {/* Facebook (perfil) */}
+                              <a
+                                href="https://www.facebook.com/profile.php?id=100077725346540"
+                                target="_blank"
                                 rel="noopener noreferrer"
-                                className="hover:scale-110 transition-transform duration-200"
+                                className="hover:scale-110 transition-transform duration-200 ml-2"
                                 title="Facebook"
                               >
                                 <FacebookIcon />
@@ -442,10 +431,10 @@ export function PropertyPreviewModal({
                           </div>
                         </div>
                         <div className="flex space-x-2">
-                          <button className="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center justify-center">
+                          {/* <button className="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center justify-center">
                             <Heart className="h-4 w-4 mr-2" />
                             Favorito
-                          </button>
+                          </button> */}
                           <button 
                             onClick={() => setShowShareModal(true)}
                             className="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center justify-center"
