@@ -1,20 +1,21 @@
 "use client"
 import NextImage from "next/image"
 import { Header } from "../components/Header"
+import { PropertyCard } from "@/components/property-card"
 import { PropertyFilter } from "@/components/PropertyFilter"
 import { CategorySection } from "@/components/category-section"
-import { PropertyCard } from "@/components/property-card"
-import { BoostSection } from "@/components/boost-section"
+import { PropertyPreviewModal } from "@/components/PropertyPreviewModal"
+import { LoginModal } from "@/components/LoginModal"
+import { Footer } from "@/components/footer"
+import { TasacionesSection } from "@/components/boost-section"
 import { ExploreSection } from "@/components/explore-section"
 import { TrendsSection } from "@/components/trends-section"
-import { Footer } from "@/components/footer"
-import { LoginModal } from "@/components/LoginModal"
-import { PropertyPreviewModal } from "@/components/PropertyPreviewModal"
 import { propiedades, Propiedad } from "@/lib/services/propiedades"
 import { useEffect, useState } from "react"
 import { useSelector } from "react-redux"
 import { RootState } from "@/lib/store/store"
 import { useRouter } from "next/navigation"
+import { Building, HomeIcon, Calculator, Gavel, MapPin, FileText, Scale } from "lucide-react"
 
 export default function Home() {
   const [propiedadesList, setPropiedadesList] = useState<Propiedad[]>([])
@@ -27,6 +28,19 @@ export default function Home() {
   
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth as any)
   const router = useRouter()
+
+  // Función para formatear el precio con la moneda de la propiedad
+  const formatPrice = (price: string, moneda: any) => {
+    return new Intl.NumberFormat('es-AR', {
+      style: 'currency',
+      currency: moneda?.codigo_iso || 'ARS'
+    }).format(parseFloat(price))
+  }
+
+  // Función para formatear solo el número sin símbolo de moneda
+  const formatPriceNumber = (price: string) => {
+    return parseFloat(price).toLocaleString('es-AR', { minimumFractionDigits: 0 })
+  }
 
   useEffect(() => {
     propiedades
@@ -149,14 +163,36 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
         <div className="w-full flex flex-col items-center px-2 md:px-8">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6 text-center">Encuentra el hogar de tus sueños</h1>
-          <p className="text-xl mb-8 max-w-2xl mx-auto text-center">
-            Short Grupo Inmobiliario te conecta directamente con las mejores propiedades del mercado
-          </p>
+          <h1 className="text-4xl md:text-5xl font-bold mb-6 text-center">Confiar también es parte de sentirse en casa</h1>
+          <div className="text-sm mb-8 max-w-6xl mx-auto text-center font-medium flex flex-wrap justify-center items-center gap-4">
+            <div className="flex items-center gap-1">
+              <Building className="h-4 w-4" />
+              <span>NEGOCIOS INMOBILIARIOS</span>
+            </div>
+            <span>•</span>
+            <div className="flex items-center gap-1">
+              <HomeIcon className="h-4 w-4" />
+              <span>ADMINISTRACIÓN DE ALQUILERES</span>
+            </div>
+            <span>•</span>
+            <div className="flex items-center gap-1">
+              <Calculator className="h-4 w-4" />
+              <span>TASACIONES PRIVADAS, JUDICIALES Y BANCARIAS</span>
+            </div>
+            <span>•</span>
+            <div className="flex items-center gap-1">
+              <MapPin className="h-4 w-4" />
+              <span>TASACIONES URBANAS Y RURALES</span>
+            </div>
+            <span>•</span>
+            <div className="flex items-center gap-1">
+              <Gavel className="h-4 w-4" />
+              <span>PERICIAS Y DILIGENCIAS EN TRIBUNALES FEDERALES Y PROVINCIALES</span>
+            </div>
+          </div>
           <div className="w-full max-w-7xl mx-auto">
             <PropertyFilter onFilter={handleFilter} />
           </div>
-          <div className="mt-8 text-sm text-center">Confiado por más de 10,000 compradores de viviendas</div>
         </div>
       </section>
 
@@ -179,23 +215,31 @@ export default function Home() {
                   <PropertyCard
                     key={p.id}
                     image={typeof p.imagenes[0] === 'string' ? p.imagenes[0] : p.imagenes[0]?.url ?? '/property1.jpg'}
-                    price={`${p.moneda.simbolo} ${Number(p.precio).toLocaleString()}`}
-                    beds={p.dormitorios ?? 0}
-                    baths={p.banos ?? 0}
-                    sqft={`${p.superficie_m2 ?? 0} m²`}
+                    price={formatPriceNumber(p.precio)}
+                    moneda={p.moneda}
+                    beds={p.dormitorios && p.dormitorios > 0 ? p.dormitorios : ''}
+                    baths={p.banos && p.banos > 0 ? p.banos : ''}
+                    sqft={p.superficie_m2 && parseFloat(p.superficie_m2) > 0 ? `${p.superficie_m2} m²` : ''}
                     address={`${p.direccion?.calle ?? ''} ${p.direccion?.numero ?? ''}`}
                     city={`${p.direccion?.ciudad ?? ''}, ${p.direccion?.provincia ?? ''}${p.direccion?.barrio ? ` - ${p.direccion.barrio}` : ''}`}
                     status={p.estado_situacion.nombre}
                     daysAgo={1}
+                    tipoPropiedad={p.tipo_propiedad?.nombre}
+                    estadoComercial={p.estado_comercial?.nombre}
+                    estadoSituacion={p.estado_situacion?.nombre}
+                    estadoFisico={p.estado_fisico?.nombre}
+                    ancho_m={p.ancho_m ?? undefined}
+                    largo_m={p.largo_m ?? undefined}
+                    antiguedad={p.antiguedad ?? undefined}
                     onClick={() => { setSelectedProperty(p); setShowPreview(true); }}
                   />
                 ))}
               </div>
-              <div className="text-center mt-10">
+              {/* <div className="text-center mt-10">
                 <button className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition-colors">
                   Ver Más Propiedades
                 </button>
-              </div>
+              </div> */}
             </>
           ) : (
             <div className="text-center py-12">
@@ -223,7 +267,7 @@ export default function Home() {
       />
 
       {/* Boost Section */}
-      {/* <BoostSection /> */}
+      <TasacionesSection />
 
       {/* Explore Neighborhoods */}
       {/* <ExploreSection /> */}

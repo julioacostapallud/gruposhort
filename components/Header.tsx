@@ -3,8 +3,10 @@ import NextImage from "next/image"
 import { useSelector, useDispatch } from "react-redux"
 import { RootState } from "@/lib/store/store"
 import { logoutUser } from "@/lib/store/authSlice"
-import { User, LogOut, X, Phone, Mail, MapPin } from "lucide-react"
+import { User, LogOut, X, Phone, Mail, MapPin, Power } from "lucide-react"
 import { useState } from "react"
+import { solicitudes } from "@/lib/services/solicitudes"
+import { useToast } from "@/hooks/use-toast"
 
 interface HeaderProps {
   variant?: 'main' | 'admin'
@@ -12,6 +14,11 @@ interface HeaderProps {
   onLoginClick?: () => void
   onToggleAdmin?: () => void
   isAdminMode?: boolean
+  // NUEVO: Props para tabs admin
+  adminTab?: 'panel' | 'tasaciones' | 'venderAlquilar'
+  onChangeAdminTab?: (tab: 'panel' | 'tasaciones' | 'venderAlquilar') => void
+  tasacionesPendientes?: number
+  ventasPendientes?: number
 }
 
 export function Header({ 
@@ -19,23 +26,48 @@ export function Header({
   onLogout, 
   onLoginClick, 
   onToggleAdmin,
-  isAdminMode = false 
+  isAdminMode = false,
+  adminTab,
+  onChangeAdminTab,
+  tasacionesPendientes = 0,
+  ventasPendientes = 0
 }: HeaderProps) {
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth as any)
   const dispatch = useDispatch()
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showContactModal, setShowContactModal] = useState(false)
+  const [contactForm, setContactForm] = useState({ nombre: '', email: '', telefono: '', mensaje: '', operacion: '', direccion: '' })
+  const [contactLoading, setContactLoading] = useState(false)
+  const [contactEnviado, setContactEnviado] = useState(false)
+  const { toast } = useToast();
 
   const handleLogout = async () => {
     await dispatch(logoutUser() as any)
     if (onLogout) onLogout()
   }
 
-  const handleContactSubmit = (e: React.FormEvent) => {
+  const handleContactChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    setContactForm({ ...contactForm, [e.target.name]: e.target.value })
+  }
+
+  const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Aquí iría la lógica para enviar el formulario al backend
-    alert('¡Gracias por tu interés! Nos pondremos en contacto contigo pronto.')
-    setShowContactModal(false)
+    setContactLoading(true)
+    try {
+      await solicitudes.crearVenderAlquilar({
+        nombre: contactForm.nombre,
+        email: contactForm.email,
+        telefono: contactForm.telefono,
+        mensaje: `Operación: ${contactForm.operacion || '-'}\nDirección: ${contactForm.direccion || '-'}\nMensaje: ${contactForm.mensaje || '-'}`
+      })
+      setContactEnviado(true)
+      setContactForm({ nombre: '', email: '', telefono: '', mensaje: '', operacion: '', direccion: '' })
+      toast({ title: '¡Solicitud enviada!', description: 'Nos comunicaremos a la brevedad.' })
+    } catch (err: any) {
+      toast({ title: 'Error al enviar', description: err?.message || 'Ocurrió un error al enviar la solicitud', variant: 'destructive' })
+    } finally {
+      setContactLoading(false)
+    }
   }
 
   const isAdmin = user?.rol === 'administrador'
@@ -48,8 +80,8 @@ export function Header({
             <img src="/Logo.svg" alt="Short Grupo Inmobiliario" className="h-14 w-auto" />
           </a>
         </div>
-
         <div className="flex items-center space-x-4">
+          {/* Restaurar botón vender/alquilar para vista pública */}
           {!isAdminMode && (
             <>
               {/* Versión desktop */}
@@ -58,10 +90,9 @@ export function Header({
                   onClick={() => setShowContactModal(true)}
                   className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
                 >
-                  ¿Quieres vender o alquilar? Asóciate con nosotros
+                  ¿Quieres vender o alquilar? Contactá a nuestro equipo de asesores
                 </button>
               </nav>
-              
               {/* Versión móvil */}
               <button 
                 onClick={() => setShowContactModal(true)}
@@ -71,20 +102,42 @@ export function Header({
               </button>
             </>
           )}
-
+          {/* Tabs de admin a la derecha, reemplazando el botón Panel Admin */}
+          {isAdminMode && isAdmin && (
+            <nav className="flex items-center gap-2">
+              <button
+                className={`px-4 py-2 rounded-md font-medium transition-colors ${adminTab === 'panel' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-50'}`}
+                onClick={() => onChangeAdminTab && onChangeAdminTab('panel')}
+              >
+                Panel Admin
+              </button>
+              <button
+                className={`px-4 py-2 rounded-md font-medium transition-colors flex items-center gap-2 ${adminTab === 'tasaciones' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-50'}`}
+                onClick={() => onChangeAdminTab && onChangeAdminTab('tasaciones')}
+              >
+                Solicitudes de Tasación
+                {tasacionesPendientes > 0 && (
+                  <span className="ml-1 bg-red-600 text-white text-xs font-bold rounded-full px-2 py-0.5">
+                    {tasacionesPendientes}
+                  </span>
+                )}
+              </button>
+              <button
+                className={`px-4 py-2 rounded-md font-medium transition-colors flex items-center gap-2 ${adminTab === 'venderAlquilar' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-50'}`}
+                onClick={() => onChangeAdminTab && onChangeAdminTab('venderAlquilar')}
+              >
+                Solicitudes de Ventas y Alquiler
+                {ventasPendientes > 0 && (
+                  <span className="ml-1 bg-red-600 text-white text-xs font-bold rounded-full px-2 py-0.5">
+                    {ventasPendientes}
+                  </span>
+                )}
+              </button>
+            </nav>
+          )}
+          {/* Círculo de usuario y menú */}
           {isAuthenticated ? (
             <div className="flex items-center space-x-4">
-              {/* Botón Panel Admin / Home */}
-              {isAdmin && (
-                <button 
-                  onClick={onToggleAdmin}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
-                >
-                  {isAdminMode ? 'Panel Admin' : 'Panel Admin'}
-                </button>
-              )}
-
-              {/* Círculo de usuario */}
               <div className="relative">
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
@@ -92,7 +145,6 @@ export function Header({
                 >
                   <User size={20} />
                 </button>
-
                 {/* Menú desplegable */}
                 {showUserMenu && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-50">
@@ -115,9 +167,10 @@ export function Header({
           ) : (
             <button 
               onClick={onLoginClick}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center"
+              aria-label="Iniciar Sesión"
             >
-              Iniciar Sesión
+              <Power className="h-5 w-5" />
             </button>
           )}
         </div>
@@ -145,93 +198,111 @@ export function Header({
                 <X size={24} />
               </button>
             </div>
-            
             <p className="text-gray-600 mb-6">
               ¿Tienes una propiedad que quieres vender o alquilar? Déjanos tus datos y nos pondremos en contacto contigo.
             </p>
-
-            <form className="space-y-4" onSubmit={handleContactSubmit}>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nombre completo *
-                </label>
-                <input
-                  type="text"
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Tu nombre completo"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Teléfono *
-                </label>
-                <input
-                  type="tel"
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Tu número de teléfono"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email *
-                </label>
-                <input
-                  type="email"
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="tu@email.com"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Tipo de operación *
-                </label>
-                <select
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            {!contactEnviado ? (
+              <form className="space-y-4" onSubmit={handleContactSubmit}>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Nombre completo *
+                  </label>
+                  <input
+                    type="text"
+                    name="nombre"
+                    value={contactForm.nombre}
+                    onChange={handleContactChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Tu nombre completo"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Teléfono *
+                  </label>
+                  <input
+                    type="tel"
+                    name="telefono"
+                    value={contactForm.telefono}
+                    onChange={handleContactChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Tu número de teléfono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email *
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={contactForm.email}
+                    onChange={handleContactChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="tu@email.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tipo de operación *
+                  </label>
+                  <select
+                    name="operacion"
+                    value={contactForm.operacion}
+                    onChange={handleContactChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Selecciona una opción</option>
+                    <option value="venta">Vender</option>
+                    <option value="alquiler">Alquilar</option>
+                    <option value="ambos">Ambos</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Dirección de la propiedad
+                  </label>
+                  <input
+                    type="text"
+                    name="direccion"
+                    value={contactForm.direccion}
+                    onChange={handleContactChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Dirección aproximada"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Mensaje
+                  </label>
+                  <textarea
+                    name="mensaje"
+                    value={contactForm.mensaje}
+                    onChange={handleContactChange}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Cuéntanos más sobre tu propiedad..."
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={contactLoading}
+                  className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors font-medium disabled:opacity-60"
                 >
-                  <option value="">Selecciona una opción</option>
-                  <option value="venta">Vender</option>
-                  <option value="alquiler">Alquilar</option>
-                  <option value="ambos">Ambos</option>
-                </select>
+                  {contactLoading ? 'Enviando...' : 'Enviar solicitud'}
+                </button>
+              </form>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8">
+                <LogOut className="h-12 w-12 text-green-400 mb-4" />
+                <h4 className="text-xl font-bold text-gray-900 mb-2">¡Solicitud enviada!</h4>
+                <p className="text-gray-600 text-center">Gracias por contactarnos. Nos comunicaremos a la brevedad.</p>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Dirección de la propiedad
-                </label>
-                <input
-                  type="text"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Dirección aproximada"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Mensaje
-                </label>
-                <textarea
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Cuéntanos más sobre tu propiedad..."
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors font-medium"
-              >
-                Enviar solicitud
-              </button>
-            </form>
-
+            )}
             <div className="mt-6 pt-4 border-t border-gray-200">
               <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
                 <div className="flex items-center">

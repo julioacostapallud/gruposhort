@@ -15,6 +15,9 @@ export interface Direccion {
   codigo_postal: string;
   latitud?: string;
   longitud?: string;
+  unidad_funcional?: string;
+  manzana?: string;
+  parcela?: string;
 }
 
 export interface Propiedad {
@@ -76,6 +79,9 @@ export interface NewPropiedad {
   departamento?: string;
   latitud?: string;
   longitud?: string;
+  unidad_funcional?: string;
+  manzana?: string;
+  parcela?: string;
 }
 
 type FilterProps = {
@@ -134,17 +140,26 @@ export const propiedades = {
     });
   },
 
-  // edita
-  update: (id: number, data: Partial<NewPropiedad>) => {
-    const payload: any = { ...data };
-    if (Array.isArray(data.propietarios)) {
-      payload.propietarios = data.propietarios.map((p: any) => typeof p === 'object' ? p.id : p);
-    }
-    if (Array.isArray(data.caracteristicas)) {
-      payload.caracteristicas = data.caracteristicas.map((c: any) => typeof c === 'object' ? c.id : c);
-    }
-    console.log('FRONTEND propiedades.update payload:', payload);
-    return api.update<Propiedad>('propiedades', id, payload);
+  async update(id: number, data: Partial<NewPropiedad>) {
+    console.log('FRONTEND propiedades.update payload:', data);
+    const response = await api.update('propiedades', id, data);
+    return response;
+  },
+
+  async updateDireccion(id: number, direccionData: {
+    direccion_id: number;
+    unidad_funcional?: string;
+    manzana?: string;
+    parcela?: string;
+    calle?: string;
+    numero?: string;
+    piso?: string;
+    departamento?: string;
+    latitud?: string;
+    longitud?: string;
+  }) {
+    const response = await api.update('propiedades', id, direccionData);
+    return response;
   },
 
   // borra

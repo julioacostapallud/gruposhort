@@ -5,12 +5,19 @@ import { propiedades, Propiedad } from '@/lib/services/propiedades'
 import { api } from '@/lib/services/apiClient'
 import { ImageUploader } from '@/components/ImageUploader'
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, DialogTrigger } from './ui/dialog';
-import { Plus } from 'lucide-react';
+import { Plus, Edit, Trash2, MapPin, Brush } from 'lucide-react';
 import Select from 'react-select';
 import { useToast } from "@/hooks/use-toast";
 
 type Cat = { id: number; nombre: string }
-type Owner = { id: number; nombre_completo: string }
+type Owner = { 
+  id: number; 
+  nombre_completo: string;
+  email?: string;
+  telefono?: string;
+  tipo_documento_id?: number;
+  numero_documento?: string;
+}
 
 interface PropertyEditFormProps {
   property: Propiedad
@@ -18,7 +25,49 @@ interface PropertyEditFormProps {
   onCancel?: () => void
 }
 
+// Componente personalizado para las opciones del select de propietarios
+const CustomOption = ({ data, innerProps, isSelected }: any) => (
+  <div 
+    {...innerProps}
+    className={`flex items-center justify-between p-2 hover:bg-gray-100 cursor-pointer ${
+      isSelected ? 'bg-blue-50' : ''
+    }`}
+  >
+    <span className="flex-1">{data.label}</span>
+    <div className="flex items-center gap-1 ml-2">
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          data.onEdit(data.owner);
+        }}
+        className="p-1 text-blue-600 hover:bg-blue-100 rounded transition-colors"
+        title="Editar propietario"
+      >
+        <Edit size={14} />
+      </button>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          data.onDelete(data.owner);
+        }}
+        className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
+        title="Eliminar propietario"
+      >
+        <Trash2 size={14} />
+      </button>
+    </div>
+  </div>
+);
+
 export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEditFormProps) {
+  console.log('PropertyEditForm - Property recibida:', property);
+  console.log('PropertyEditForm - Dirección:', property.direccion);
+  console.log('PropertyEditForm - unidad_funcional:', property.direccion?.unidad_funcional);
+  console.log('PropertyEditForm - manzana:', property.direccion?.manzana);
+  console.log('PropertyEditForm - parcela:', property.direccion?.parcela);
+  
   const { toast } = useToast();
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -41,6 +90,21 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
   const [formError, setFormError] = useState<string | null>(null);
   const [geoLoading, setGeoLoading] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
+  
+  // Estado para modal de nuevo barrio
+  const [showNewBarrioModal, setShowNewBarrioModal] = useState(false);
+  const [newBarrioNombre, setNewBarrioNombre] = useState('');
+  const [isCreatingBarrio, setIsCreatingBarrio] = useState(false);
+  
+  // Estado para modales de propietarios
+  const [showEditOwnerModal, setShowEditOwnerModal] = useState(false);
+  const [editingOwner, setEditingOwner] = useState<Owner | null>(null);
+  const [isEditingOwner, setIsEditingOwner] = useState(false);
+  const [isDeletingOwner, setIsDeletingOwner] = useState(false);
+  
+  // Estado para modal de confirmación de eliminación
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [ownerToDelete, setOwnerToDelete] = useState<Owner | null>(null);
 
   // Memoizar existingImages para evitar ciclos infinitos en ImageUploader
   const memoizedExistingImages = useMemo(() => property.imagenes, [property.imagenes])
@@ -71,7 +135,10 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
     piso: property.direccion?.piso || '',
     departamento: property.direccion?.departamento || '',
     latitud: property.direccion?.latitud || '',
-    longitud: property.direccion?.longitud || ''
+    longitud: property.direccion?.longitud || '',
+    unidad_funcional: property.direccion?.unidad_funcional || '',
+    manzana: property.direccion?.manzana || '',
+    parcela: property.direccion?.parcela || ''
   })
 
   // Precarga ciudades si hay provincia inicial (por nombre)
@@ -193,6 +260,28 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
       setFormError('La dirección (provincia, ciudad, calle y número) es obligatoria.');
       return;
     }
+
+    // Validar coordenadas si están presentes
+    if (form.latitud && form.longitud) {
+      const lat = parseFloat(form.latitud);
+      const lng = parseFloat(form.longitud);
+      
+      if (isNaN(lat) || isNaN(lng)) {
+        setFormError('Las coordenadas deben ser números válidos');
+        return;
+      }
+      
+      if (lat < -90 || lat > 90) {
+        setFormError('La latitud debe estar entre -90 y 90');
+        return;
+      }
+      
+      if (lng < -180 || lng > 180) {
+        setFormError('La longitud debe estar entre -180 y 180');
+        return;
+      }
+    }
+    
     setFormError(null);
     setSaving(true)
     
@@ -200,7 +289,7 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
       // Obtener las imágenes marcadas para eliminar
       const imagesToDelete = (window as any).ImageUploaderRef?.getImagesToDelete() || []
       
-      await propiedades.update(property.id, {
+      const updateData = {
         tipo_propiedad_id: form.tipo_propiedad_id,
         estado_comercial_id: form.estado_comercial_id,
         estado_situacion_id: form.estado_situacion_id,
@@ -219,24 +308,35 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
         id_moneda: form.id_moneda,
         caracteristicas: Array.isArray(form.caracteristicas) ? form.caracteristicas.map(id => ({ id })) : [],
         propietarios: Array.isArray(form.propietarios) ? form.propietarios.map(id => ({ id })) : [],
-        provincia_id: form.provincia_id || undefined,
-        ciudad_id: form.ciudad_id || undefined,
-        barrio_id: form.barrio_id || undefined,
-        calle: form.calle || undefined,
-        numero: form.numero || undefined,
-        piso: form.piso || undefined,
-        departamento: form.departamento || undefined,
-        latitud: form.latitud || undefined,
-        longitud: form.longitud || undefined
-      })
+        // Solo enviar campos de dirección si se están modificando
+        ...(form.calle !== property.direccion?.calle && { calle: form.calle }),
+        ...(form.numero !== property.direccion?.numero && { numero: form.numero }),
+        ...(form.piso !== property.direccion?.piso && { piso: form.piso }),
+        ...(form.departamento !== property.direccion?.departamento && { departamento: form.departamento }),
+        ...(form.latitud !== property.direccion?.latitud && { latitud: form.latitud }),
+        ...(form.longitud !== property.direccion?.longitud && { longitud: form.longitud }),
+        // Siempre enviar los nuevos campos (incluso si están vacíos)
+        unidad_funcional: form.unidad_funcional !== undefined ? form.unidad_funcional : undefined,
+        manzana: form.manzana !== undefined ? form.manzana : undefined,
+        parcela: form.parcela !== undefined ? form.parcela : undefined
+      };
+      
+      await propiedades.update(property.id, updateData)
+      
+      // Si se están actualizando campos de dirección específicos, usar el endpoint específico
+      if (property.direccion?.id) {
+        await propiedades.updateDireccion(property.id, {
+          direccion_id: property.direccion.id,
+          unidad_funcional: form.unidad_funcional !== undefined ? form.unidad_funcional : undefined,
+          manzana: form.manzana !== undefined ? form.manzana : undefined,
+          parcela: form.parcela !== undefined ? form.parcela : undefined
+        });
+      }
       
       // Manejar imágenes: obtener el estado completo del ImageUploader
       try {
         // Obtener las imágenes marcadas para eliminar
         const imagesToDelete = (window as any).ImageUploaderRef?.getImagesToDelete() || []
-        
-        console.log('Imágenes a eliminar:', imagesToDelete)
-        console.log('Imágenes nuevas:', uploadedImages)
         
         // 1. Eliminar imágenes marcadas para eliminar de Cloudinary
         if (imagesToDelete.length > 0) {
@@ -244,7 +344,6 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
           for (const image of imagesToDelete) {
             try {
               await cloudinaryService.deleteImage(image.public_id)
-              console.log('Imagen eliminada de Cloudinary:', image.public_id)
             } catch (error) {
               console.error('Error eliminando imagen de Cloudinary:', image.public_id, error)
               // Continuar con las demás imágenes
@@ -257,7 +356,6 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
         // (existentes no eliminadas + nuevas)
         try {
           await propiedades.updateImages(property.id, uploadedImages)
-          console.log('Imágenes actualizadas en la base de datos:', uploadedImages.length)
         } catch (error) {
           console.error('Error actualizando imágenes en BD:', error)
           throw new Error('Error al actualizar imágenes en la base de datos')
@@ -311,6 +409,170 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
       },
       { timeout: 10000 }
     );
+  };
+
+  // Función para capitalizar texto (primera letra mayúscula, resto minúsculas)
+  const capitalizarTexto = (texto: string): string => {
+    return texto.toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  // Función para crear nuevo barrio
+  const handleCreateBarrio = async () => {
+    if (!newBarrioNombre.trim() || !form.ciudad_id) {
+      toast({ 
+        title: 'Error', 
+        description: 'Por favor ingresa el nombre del barrio y asegúrate de tener una ciudad seleccionada', 
+      });
+      return;
+    }
+
+    setIsCreatingBarrio(true);
+    try {
+      const nombreCapitalizado = capitalizarTexto(newBarrioNombre.trim());
+      
+      const response = await api.create('barrios', {
+        nombre: nombreCapitalizado,
+        ciudad_id: form.ciudad_id
+      });
+
+      if (response.success) {
+        // Agregar el nuevo barrio a la lista
+        const nuevoBarrio = response.barrio;
+        setBarrios(prev => [...prev, { id: nuevoBarrio.id, nombre: nuevoBarrio.nombre }]);
+        
+        // Seleccionar automáticamente el nuevo barrio
+        setForm(prev => ({ ...prev, barrio_id: nuevoBarrio.id }));
+        
+        // Cerrar modal y limpiar
+        setShowNewBarrioModal(false);
+        setNewBarrioNombre('');
+        
+        toast({ 
+          title: 'Barrio creado exitosamente', 
+          description: `"${nombreCapitalizado}" ha sido agregado a la lista`, 
+        });
+      }
+    } catch (error: any) {
+      let errorMessage = 'Error al crear el barrio';
+      if (error.error === 'Ya existe un barrio con ese nombre en esta ciudad') {
+        errorMessage = 'Ya existe un barrio con ese nombre en esta ciudad';
+      }
+      toast({ 
+        title: 'Error', 
+        description: errorMessage, 
+      });
+    } finally {
+      setIsCreatingBarrio(false);
+    }
+  };
+
+  // Función para abrir modal de nuevo barrio
+  const handleOpenNewBarrioModal = () => {
+    if (!form.ciudad_id) {
+      toast({ 
+        title: 'Error', 
+        description: 'Primero debes seleccionar una ciudad', 
+      });
+      return;
+    }
+    setShowNewBarrioModal(true);
+    setNewBarrioNombre('');
+  };
+
+  // Función para editar propietario
+  const handleEditOwner = (owner: Owner) => {
+    setEditingOwner(owner);
+    setShowEditOwnerModal(true);
+  };
+
+  // Función para guardar edición de propietario
+  const handleSaveEditOwner = async (updatedData: any) => {
+    if (!editingOwner) return;
+
+    setIsEditingOwner(true);
+    try {
+      const response = await api.update(`propietarios`, editingOwner.id, updatedData);
+      
+      if (response.success) {
+        // Actualizar la lista de propietarios
+        setOwners(prev => prev.map(owner => 
+          owner.id === editingOwner.id 
+            ? { ...owner, ...response.propietario }
+            : owner
+        ));
+        
+        setShowEditOwnerModal(false);
+        setEditingOwner(null);
+        
+        toast({ 
+          title: 'Propietario actualizado exitosamente', 
+          description: 'Los datos han sido guardados correctamente', 
+        });
+      }
+    } catch (error: any) {
+      toast({ 
+        title: 'Error al actualizar propietario', 
+        description: error.message || 'Ocurrió un error inesperado', 
+      });
+    } finally {
+      setIsEditingOwner(false);
+    }
+  };
+
+  // Función para eliminar propietario
+  const handleDeleteOwner = async (owner: Owner) => {
+    setOwnerToDelete(owner);
+    setShowDeleteConfirmModal(true);
+  };
+
+  // Función para confirmar eliminación
+  const confirmDeleteOwner = async () => {
+    if (!ownerToDelete) return;
+
+    setIsDeletingOwner(true);
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, '') ?? 'https://short-backend-five.vercel.app'}/api/propietarios/${ownerToDelete.id}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        
+        if (response.status === 409) {
+          // El propietario tiene propiedades asociadas
+          toast({ 
+            title: 'No se puede eliminar', 
+            description: 'El propietario tiene propiedades asociadas y no puede ser eliminado', 
+          });
+          return;
+        }
+        
+        throw new Error(errorData.error || errorData.message || 'Error al eliminar propietario');
+      }
+      
+      // Remover de la lista de propietarios
+      setOwners(prev => prev.filter(o => o.id !== ownerToDelete.id));
+      
+      // Remover de los propietarios seleccionados si estaba seleccionado
+      setForm(prev => ({
+        ...prev,
+        propietarios: prev.propietarios.filter(id => id !== ownerToDelete.id)
+      }));
+      
+      toast({ 
+        title: 'Propietario eliminado exitosamente', 
+        description: 'El propietario ha sido removido del sistema', 
+      });
+    } catch (error: any) {
+      toast({ 
+        title: 'Error', 
+        description: error.message || 'Error al eliminar propietario', 
+      });
+    } finally {
+      setIsDeletingOwner(false);
+      setShowDeleteConfirmModal(false);
+      setOwnerToDelete(null);
+    }
   };
 
   if (loading) {
@@ -586,25 +848,45 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
           {/* 5. Propietarios */}
           <div className="flex items-end gap-2">
             <div className="flex-1">
-              <label htmlFor="propietarios" className="block text-sm font-medium text-gray-700 mb-2">
-                Propietarios
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label htmlFor="propietarios" className="block text-sm font-medium text-gray-700">
+                  Propietarios
+                </label>
+                <button 
+                  type="button" 
+                  className="px-2 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center text-xs" 
+                  onClick={() => setShowOwnerModal(true)}
+                  title="Agregar propietario"
+                >
+                  <Plus size={12} />
+                </button>
+              </div>
               <Select
                 isMulti
                 name="propietarios"
-                options={owners.map(owner => ({ value: owner.id, label: owner.nombre_completo }))}
+                options={owners.map(owner => ({ 
+                  value: owner.id, 
+                  label: owner.nombre_completo,
+                  owner: owner,
+                  onEdit: handleEditOwner,
+                  onDelete: handleDeleteOwner
+                }))}
                 value={owners
                   .filter(owner => form.propietarios.includes(owner.id))
-                  .map(owner => ({ value: owner.id, label: owner.nombre_completo }))}
+                  .map(owner => ({ 
+                    value: owner.id, 
+                    label: owner.nombre_completo,
+                    owner: owner,
+                    onEdit: handleEditOwner,
+                    onDelete: handleDeleteOwner
+                  }))}
                 onChange={selected => {
                   setForm({ ...form, propietarios: selected ? (selected as any[]).map((s: any) => s.value) : [] })
                 }}
                 classNamePrefix="react-select"
                 placeholder="Seleccionar propietarios"
+                components={{ Option: CustomOption }}
               />
-              <button type="button" className="mt-2 px-2 py-1 rounded bg-blue-100 text-blue-600 flex items-center gap-1" onClick={() => setShowOwnerModal(true)}>
-                <Plus className="w-4 h-4" /> Agregar propietario
-              </button>
             </div>
           </div>
           {/* 6. Dirección */}
@@ -645,9 +927,24 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
               </select>
             </div>
             <div>
-              <label htmlFor="barrio" className="block text-sm font-medium text-gray-700 mb-2">
-                Barrio
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label htmlFor="barrio" className="block text-sm font-medium text-gray-700">
+                  Barrio
+                </label>
+                <button
+                  type="button"
+                  onClick={handleOpenNewBarrioModal}
+                  className={`px-2 py-1 rounded-md transition-colors flex items-center justify-center text-xs ${
+                    form.ciudad_id 
+                      ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
+                  title={form.ciudad_id ? "Agregar nuevo barrio" : "Primero selecciona una ciudad"}
+                  disabled={!form.ciudad_id}
+                >
+                  <Plus size={12} />
+                </button>
+              </div>
               <select
                 id="barrio"
                 value={form.barrio_id}
@@ -714,36 +1011,91 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
               />
             </div>
           </div>
+          
+          {/* Campos adicionales de dirección */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label htmlFor="unidad_funcional" className="block text-sm font-medium text-gray-700 mb-2">
+                Unidad Funcional
+              </label>
+              <input
+                id="unidad_funcional"
+                type="text"
+                value={form.unidad_funcional}
+                onChange={e => setForm({ ...form, unidad_funcional: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label htmlFor="manzana" className="block text-sm font-medium text-gray-700 mb-2">
+                Manzana
+              </label>
+              <input
+                id="manzana"
+                type="text"
+                value={form.manzana}
+                onChange={e => setForm({ ...form, manzana: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label htmlFor="parcela" className="block text-sm font-medium text-gray-700 mb-2">
+                Parcela
+              </label>
+              <input
+                id="parcela"
+                type="text"
+                value={form.parcela}
+                onChange={e => setForm({ ...form, parcela: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+          
           {/* 7. Geolocalización */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <label htmlFor="latitud" className="block text-sm font-medium text-gray-700 mb-2">Latitud</label>
               <input 
                 id="latitud" 
-                type="text" 
+                type="number" 
+                step="any"
+                placeholder="Ej: -27.4516"
                 value={form.latitud} 
-                readOnly 
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100" 
+                onChange={e => setForm({ ...form, latitud: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
               />
             </div>
             <div>
               <label htmlFor="longitud" className="block text-sm font-medium text-gray-700 mb-2">Longitud</label>
               <input 
                 id="longitud" 
-                type="text" 
+                type="number" 
+                step="any"
+                placeholder="Ej: -58.9867"
                 value={form.longitud} 
-                readOnly 
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100" 
+                onChange={e => setForm({ ...form, longitud: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
               />
             </div>
-            <div className="flex items-end">
+            <div className="flex items-end gap-4">
               <button 
                 type="button" 
                 onClick={handleGeolocalizar} 
-                className="w-full px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50" 
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2" 
                 disabled={geoLoading}
               >
-                {geoLoading ? 'Obteniendo ubicación...' : 'Geolocalizar'}
+                <MapPin size={14} />
+                {geoLoading ? 'Obteniendo...' : 'Geolocalizar'}
+              </button>
+              <button 
+                type="button" 
+                onClick={() => setForm({ ...form, latitud: '', longitud: '' })}
+                className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors flex items-center justify-center gap-2"
+                title="Limpiar coordenadas"
+              >
+                <Brush size={14} />
+                Limpiar
               </button>
             </div>
           </div>
@@ -822,6 +1174,169 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
               <button type="submit" disabled={savingOwner} className="px-4 py-2 bg-blue-600 text-white rounded">{savingOwner ? 'Guardando...' : 'Guardar'}</button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de nuevo barrio */}
+      <Dialog open={showNewBarrioModal} onOpenChange={setShowNewBarrioModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nuevo Barrio</DialogTitle>
+            <DialogDescription>
+              Crear nuevo barrio para {ciudades.find(c => c.id === form.ciudad_id)?.nombre}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="newBarrioNombre" className="block text-sm font-medium text-gray-700 mb-2">
+                Nombre del barrio
+              </label>
+              <input
+                id="newBarrioNombre"
+                type="text"
+                value={newBarrioNombre}
+                onChange={e => setNewBarrioNombre(e.target.value)}
+                placeholder="Ingresa el nombre del barrio"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                onKeyPress={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleCreateBarrio();
+                  }
+                }}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <button 
+              type="button" 
+              onClick={() => setShowNewBarrioModal(false)} 
+              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button 
+              type="button" 
+              onClick={handleCreateBarrio}
+              disabled={isCreatingBarrio || !newBarrioNombre.trim()} 
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              {isCreatingBarrio ? 'Creando...' : 'Crear Barrio'}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de edición de propietario */}
+      <Dialog open={showEditOwnerModal} onOpenChange={setShowEditOwnerModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Propietario</DialogTitle>
+            <DialogDescription>
+              Modificar datos de {editingOwner?.nombre_completo}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {editingOwner && (
+            <form onSubmit={async e => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const updatedData = {
+                nombre_completo: formData.get('nombre_completo') as string,
+                email: formData.get('email') as string,
+                telefono: formData.get('telefono') as string
+              };
+              await handleSaveEditOwner(updatedData);
+            }} className="space-y-4">
+              <div>
+                <label htmlFor="edit-nombre" className="block text-sm font-medium text-gray-700 mb-2">
+                  Nombre completo *
+                </label>
+                <input
+                  id="edit-nombre"
+                  name="nombre_completo"
+                  type="text"
+                  defaultValue={editingOwner.nombre_completo}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="edit-email" className="block text-sm font-medium text-gray-700 mb-2">
+                  Email
+                </label>
+                <input
+                  id="edit-email"
+                  name="email"
+                  type="email"
+                  defaultValue={editingOwner.email || ''}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="edit-telefono" className="block text-sm font-medium text-gray-700 mb-2">
+                  Teléfono
+                </label>
+                <input
+                  id="edit-telefono"
+                  name="telefono"
+                  type="text"
+                  defaultValue={editingOwner.telefono || ''}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <DialogFooter>
+                <button 
+                  type="button" 
+                  onClick={() => setShowEditOwnerModal(false)} 
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit"
+                  disabled={isEditingOwner} 
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  {isEditingOwner ? 'Guardando...' : 'Guardar Cambios'}
+                </button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de confirmación de eliminación */}
+      <Dialog open={showDeleteConfirmModal} onOpenChange={setShowDeleteConfirmModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar Eliminación</DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que quieres eliminar a "{ownerToDelete?.nombre_completo}"?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <button 
+              type="button" 
+              onClick={() => setShowDeleteConfirmModal(false)} 
+              className="px-4 py-2 border rounded"
+            >
+              Cancelar
+            </button>
+            <button 
+              type="button" 
+              onClick={confirmDeleteOwner} 
+              disabled={isDeletingOwner} 
+              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50"
+            >
+              {isDeletingOwner ? 'Eliminando...' : 'Eliminar'}
+            </button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

@@ -182,22 +182,18 @@ export function PropertyPreviewModal({
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
                   <div className="flex items-center space-x-4">
-                    <div className="flex items-center">
-                      <NextImage 
-                        src="/logo.png" 
-                        alt="Short" 
-                        width={40} 
-                        height={40} 
-                        className="mr-3"
-                      />
-                      <div>
-                        <h1 className="text-lg font-bold text-blue-600">Short</h1>
-                        <p className="text-xs text-gray-600">Grupo Inmobiliario</p>
-                      </div>
-                    </div>
-                    <div className="h-8 w-px bg-gray-300"></div>
+                    {/* Logo y título alineados como en el Header */}
+                    <NextImage 
+                      src="/Logo.svg" 
+                      alt="Short Grupo Inmobiliario" 
+                      width={48} 
+                      height={48} 
+                      className="h-12 w-auto mr-3"
+                    />
                     <div>
-                      <h2 className="text-xl font-bold text-gray-900">{property.titulo}</h2>
+                      <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                        {property.titulo}
+                      </h2>
                       <p className="text-sm text-gray-500 leading-relaxed mt-2">
                         {property.descripcion || 'Sin descripción disponible.'}
                       </p>
@@ -329,32 +325,17 @@ export function PropertyPreviewModal({
                     {/* Características (bloque unificado, badges modernos) */}
                     <div className="border-b border-gray-200">
                       <div className="p-4 bg-blue-50 rounded-t-xl">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Características</h3>
+              
                         <div className="flex flex-row gap-2 w-full items-center flex-wrap">
                           {/* Superficie */}
                           {property.superficie_m2 && (
                             <div className="flex items-center p-2 bg-white rounded-lg shadow-sm min-w-[170px] gap-1">
                               <Square className="h-4 w-4 text-blue-600 font-bold" />
-                              <span className="font-bold text-gray-900 text-sm">{property.superficie_m2} m²</span>
+                              <span className="font-bold text-gray-900 text-sm">{property.superficie_m2}m² ({property.ancho_m}x{property.largo_m})</span>
                               <span className="text-gray-700 text-sm ml-1">Superficie</span>
                             </div>
                           )}
-                          {/* Ancho */}
-                          {property.ancho_m && (
-                            <div className="flex items-center p-2 bg-white rounded-lg shadow-sm min-w-[130px] gap-1">
-                              <Square className="h-4 w-4 text-blue-600 font-bold" />
-                              <span className="font-bold text-gray-900 text-sm">{property.ancho_m} m</span>
-                              <span className="text-gray-700 text-sm ml-1">Ancho</span>
-                            </div>
-                          )}
-                          {/* Largo */}
-                          {property.largo_m && (
-                            <div className="flex items-center p-2 bg-white rounded-lg shadow-sm min-w-[130px] gap-1">
-                              <Square className="h-4 w-4 text-blue-600 font-bold" />
-                              <span className="font-bold text-gray-900 text-sm">{property.largo_m} m</span>
-                              <span className="text-gray-700 text-sm ml-1">Largo</span>
-                            </div>
-                          )}
+                         
                           {/* Antigüedad */}
                           {property.antiguedad && (
                             <div className="flex items-center p-2 bg-white rounded-lg shadow-sm min-w-[130px] gap-1">

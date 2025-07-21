@@ -247,6 +247,8 @@ export function ImageUploader({
     const [moved] = reordered.splice(result.source.index, 1)
     reordered.splice(result.destination.index, 0, moved)
     setImages(reordered)
+    // Notificar al componente padre con el nuevo orden
+    notifyParent(reordered)
   }
 
   const removeImage = async (id: string) => {

@@ -155,16 +155,7 @@ export function PropertyPreviewModalMobile({
               {/* Header */}
               <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
                 <div className="flex items-center space-x-3">
-                  <NextImage 
-                    src="/logo.png" 
-                    alt="Short" 
-                    width={32} 
-                    height={32} 
-                  />
-                  <div>
-                    <h1 className="text-base font-bold text-blue-600">Short</h1>
-                    <p className="text-xs text-gray-600">Grupo Inmobiliario</p>
-                  </div>
+                  <img src="/Logo.svg" alt="Short Grupo Inmobiliario" className="h-14 w-auto" />
                 </div>
                 <button
                   onClick={onClose}
