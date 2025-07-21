@@ -176,56 +176,46 @@ export function PropertyPreviewModal({
               className="relative w-full h-full flex items-center justify-center p-4"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Modal Content */}
               <div className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl h-full max-h-[95vh] overflow-hidden flex flex-col">
-                
-                {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-                  <div className="flex items-center space-x-4">
-                    {/* Logo y título alineados como en el Header */}
-                    <NextImage 
-                      src="/Logo.svg" 
-                      alt="Short Grupo Inmobiliario" 
-                      width={48} 
-                      height={48} 
-                      className="h-12 w-auto mr-3"
-                    />
-                    <div>
+                {/* Header con gradiente y estilos originales */}
+                <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <NextImage 
+                        src="/Logo.svg" 
+                        alt="Short Grupo Inmobiliario" 
+                        width={48} 
+                        height={48} 
+                        className="h-12 w-auto mr-3"
+                      />
                       <h2 className="text-xl font-bold text-gray-900 flex items-center">
                         {property.titulo}
                       </h2>
-                      <p className="text-sm text-gray-500 leading-relaxed mt-2">
-                        {property.descripcion || 'Sin descripción disponible.'}
-                      </p>
-                      <p className="text-sm text-gray-600 flex items-center mt-2">
-                        <MapPin className="h-4 w-4 mr-1" />
-                        {property.direccion?.calle} {property.direccion?.numero}, {property.direccion?.ciudad}
-                      </p>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      {isAdminMode && (
+                        <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium border border-blue-200">
+                          Vista Previa
+                        </div>
+                      )}
+                      <button
+                        onClick={onClose}
+                        className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                      >
+                        <X className="h-6 w-6 text-gray-600" />
+                      </button>
                     </div>
                   </div>
-                  
-                  <div className="flex items-center space-x-3">
-                    {isAdminMode && (
-                      <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium border border-blue-200">
-                        Vista Previa
-                      </div>
-                    )}
-                    <button
-                      onClick={onClose}
-                      className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                    >
-                      <X className="h-6 w-6 text-gray-600" />
-                    </button>
+                  <div className="mt-2 text-gray-600 text-base w-full">
+                    {property.descripcion || 'Sin descripción disponible.'}
                   </div>
                 </div>
 
-                {/* Content */}
+                {/* Main: dos columnas, colores y estilos originales */}
                 <div className="flex-1 overflow-hidden flex">
-                  
-                  {/* Left Side - Gallery & Map */}
+                  {/* Columna izquierda: imágenes y mapa */}
                   <div className="flex-1 flex flex-col">
-                    
-                    {/* Image Gallery */}
+                    {/* Galería de imágenes (igual que antes) */}
                     <div className="relative h-[400px] bg-blue-600 cursor-pointer" onClick={() => setShowImageModal(true)}>
                       {images.length > 0 ? (
                         <>
@@ -238,8 +228,7 @@ export function PropertyPreviewModal({
                               className="max-w-full max-h-full object-contain"
                             />
                           </div>
-                          
-                          {/* Navigation Arrows */}
+                          {/* Navigation Arrows, Counter, Thumbnails (igual que antes) */}
                           {hasMultipleImages && (
                             <>
                               <button
@@ -256,15 +245,11 @@ export function PropertyPreviewModal({
                               </button>
                             </>
                           )}
-                          
-                          {/* Image Counter */}
                           {hasMultipleImages && (
                             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
                               {currentImageIndex + 1} / {images.length}
                             </div>
                           )}
-                          
-                          {/* Thumbnails */}
                           {hasMultipleImages && (
                             <div className="absolute bottom-4 left-4 flex space-x-2">
                               {images.slice(0, 5).map((img, index) => (
@@ -298,8 +283,7 @@ export function PropertyPreviewModal({
                         </div>
                       )}
                     </div>
-
-                    {/* Google Map */}
+                    {/* Mapa (igual que antes) */}
                     <div className="h-[300px] bg-gray-100 relative">
                       {property.direccion?.latitud && property.direccion?.longitud ? (
                         <iframe
@@ -321,82 +305,16 @@ export function PropertyPreviewModal({
                         </div>
                       )}
                     </div>
-
-                    {/* Características (bloque unificado, badges modernos) */}
-                    <div className="border-b border-gray-200">
-                      <div className="p-4 bg-blue-50 rounded-t-xl">
-              
-                        <div className="flex flex-row gap-2 w-full items-center flex-wrap">
-                          {/* Superficie */}
-                          {property.superficie_m2 && (
-                            <div className="flex items-center p-2 bg-white rounded-lg shadow-sm min-w-[170px] gap-1">
-                              <Square className="h-4 w-4 text-blue-600 font-bold" />
-                              <span className="font-bold text-gray-900 text-sm">{property.superficie_m2}m² ({property.ancho_m}x{property.largo_m})</span>
-                              <span className="text-gray-700 text-sm ml-1">Superficie</span>
-                            </div>
-                          )}
-                         
-                          {/* Antigüedad */}
-                          {property.antiguedad && (
-                            <div className="flex items-center p-2 bg-white rounded-lg shadow-sm min-w-[130px] gap-1">
-                              <Calendar className="h-4 w-4 text-blue-600 font-bold" />
-                              <span className="font-bold text-gray-900 text-sm">{property.antiguedad} años</span>
-                              <span className="text-gray-700 text-sm ml-1">Antigüedad</span>
-                            </div>
-                          )}
-                          {/* Dormitorios */}
-                          {property.dormitorios && (
-                            <div className="flex items-center p-2 bg-white rounded-lg shadow-sm min-w-[130px] gap-1">
-                              <Bed className="h-4 w-4 text-blue-600 font-bold" />
-                              <span className="font-bold text-gray-900 text-sm">{property.dormitorios}</span>
-                              <span className="text-gray-700 text-sm ml-1">Dormitorios</span>
-                            </div>
-                          )}
-                          {/* Baños */}
-                          {property.banos && (
-                            <div className="flex items-center p-2 bg-white rounded-lg shadow-sm min-w-[110px] gap-1">
-                              <Bath className="h-4 w-4 text-blue-600 font-bold" />
-                              <span className="font-bold text-gray-900 text-sm">{property.banos}</span>
-                              <span className="text-gray-700 text-sm ml-1">Baños</span>
-                            </div>
-                          )}
-                          {/* Tipo */}
-                          <div className="flex items-center p-2 bg-white rounded-lg shadow-sm min-w-[130px] gap-1">
-                            <Building2 className="h-4 w-4 text-blue-600 font-bold" />
-                            <span className="font-bold text-gray-900 text-sm">{property.tipo_propiedad.nombre}</span>
-                            <span className="text-gray-700 text-sm ml-1">Tipo</span>
-                          </div>
-                        </div>
-                        {/* Características secundarias, solo badges amarillos */}
-                        <div className="mt-4">
-                          <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto">
-                            {property.caracteristicas && property.caracteristicas.length > 0 ? (
-                              property.caracteristicas.map((char) => (
-                                <span
-                                  key={char.id}
-                                  className="px-3 py-1 bg-white text-yellow-700 border border-yellow-300 rounded-full text-sm whitespace-nowrap shadow-sm"
-                                >
-                                  {char.nombre}
-                                </span>
-                              ))
-                            ) : (
-                              <p className="text-gray-500 text-sm">Sin características especificadas</p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
                   </div>
-
-                  {/* Right Side - Property Details */}
+                  {/* Columna derecha: precio, estados, contactos (igual que antes) */}
                   <div className="w-96 bg-white border-l border-gray-200 overflow-y-auto">
-                    
                     {/* Price & Status */}
                     <div className="p-6 border-b border-gray-200">
                       <div className="flex items-start justify-between">
                         <div>
-                          <div className="text-3xl font-bold text-gray-900 mb-2">
-                            {formatPrice(property.precio, property.moneda)}
+                          <div className={`font-bold mb-2 flex items-center gap-2 ${property.moneda?.id === 2 ? 'text-2xl text-green-800' : 'text-xl text-blue-700'}`}> 
+                            {property.moneda?.id === 2 ? '🇺🇸' : '🇦🇷'}
+                            <span>{formatPrice(property.precio, property.moneda)}</span>
                           </div>
                           <div className="space-y-1 text-sm text-gray-600">
                             <div className="flex items-center">
@@ -422,58 +340,14 @@ export function PropertyPreviewModal({
                         </div>
                       </div>
                     </div>
-
-
-
-
-
-
-
-
-
-                    {/* Address Details */}
-                    <div className="p-6 border-b border-gray-200">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
-                        <Map className="h-5 w-5 mr-2" />
-                        Dirección
-                      </h3>
-                      <div className="space-y-2 text-sm">
-                        {property.direccion ? (
-                          <>
-                            <p className="text-gray-700">
-                              {property.direccion.calle} {property.direccion.numero}
-                              {property.direccion.piso && `, Piso ${property.direccion.piso}`}
-                              {property.direccion.departamento && `, Depto ${property.direccion.departamento}`}
-                            </p>
-                            <p className="text-gray-600">
-                              {property.direccion.ciudad}, {property.direccion.provincia}
-                              {property.direccion.barrio && ` - ${property.direccion.barrio}`}
-                            </p>
-                            <p className="text-gray-600">
-                              CP: {property.direccion.codigo_postal}
-                            </p>
-                            {property.direccion.latitud && property.direccion.longitud && (
-                              <p className="text-gray-500 text-xs">
-                                Coordenadas: {property.direccion.latitud}, {property.direccion.longitud}
-                              </p>
-                            )}
-                          </>
-                        ) : (
-                          <p className="text-gray-500">Dirección no especificada</p>
-                        )}
-                      </div>
-                    </div>
-
-
-
-                    {/* Action Buttons */}
+                    {/* Contactos (igual que antes) */}
                     <div className="p-4">
                       <div className="space-y-3">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Contacto</h3>
                         <button className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center">
                           <Phone className="h-4 w-4 mr-2" />
                           3624-727-330
                         </button>
-                        
                         {/* Consultar por */}
                         <div>
                           <div className="flex items-center justify-center gap-3 mb-3">
@@ -520,7 +394,6 @@ export function PropertyPreviewModal({
                             </div>
                           </div>
                         </div>
-                        
                         <div className="flex space-x-2">
                           <button className="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center justify-center">
                             <Heart className="h-4 w-4 mr-2" />
@@ -535,6 +408,103 @@ export function PropertyPreviewModal({
                           </button>
                         </div>
                       </div>
+                    </div>
+                    {/* Dirección debajo de contactos */}
+                    <div className="p-4 border-t border-gray-200">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center">
+                        <MapPin className="h-5 w-5 mr-2" />
+                        Dirección
+                      </h3>
+                      <div className="space-y-1 text-sm">
+                        {property.direccion ? (
+                          <>
+                            <div className="text-gray-700">
+                              {property.direccion.calle} {property.direccion.numero}
+                              {property.direccion.piso && `, Piso ${property.direccion.piso}`}
+                              {property.direccion.departamento && `, Depto ${property.direccion.departamento}`}
+                            </div>
+                            {property.direccion.barrio && (
+                              <div className="text-gray-600">Barrio: {property.direccion.barrio}</div>
+                            )}
+                            <div className="text-gray-600">
+                              {property.direccion.ciudad}, {property.direccion.provincia}
+                            </div>
+                            <div className="text-gray-600">
+                              CP: {property.direccion.codigo_postal}
+                            </div>
+                            {property.direccion.latitud && property.direccion.longitud && (
+                              <div className="text-gray-500 text-xs">
+                                Coordenadas: {property.direccion.latitud}, {property.direccion.longitud}
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="text-gray-500">Dirección no especificada</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {/* Footer: características ancho completo, azul claro */}
+                <div className="border-t border-gray-200 p-6 bg-blue-50">
+                  <div className="flex flex-row gap-2 w-full items-center flex-wrap">
+                    {/* Superficie agrupada con ancho y largo */}
+                    {(property.superficie_m2 || (property.ancho_m && property.largo_m)) && (
+                      <div className="flex items-center p-2 bg-white rounded-lg shadow-sm min-w-[170px] gap-1">
+                        <Square className="h-4 w-4 text-blue-600 font-bold" />
+                        <span className="font-bold text-gray-900 text-sm">
+                          {property.superficie_m2 ? `${property.superficie_m2} m²` : ''}
+                          {(property.ancho_m && property.largo_m) ? ` (${property.ancho_m}x${property.largo_m})` : ''}
+                        </span>
+                        <span className="text-gray-700 text-sm ml-1">Superficie</span>
+                      </div>
+                    )}
+                    {/* Antigüedad */}
+                    {property.antiguedad && (
+                      <div className="flex items-center p-2 bg-white rounded-lg shadow-sm min-w-[130px] gap-1">
+                        <Calendar className="h-4 w-4 text-blue-600 font-bold" />
+                        <span className="font-bold text-gray-900 text-sm">{property.antiguedad} años</span>
+                        <span className="text-gray-700 text-sm ml-1">Antigüedad</span>
+                      </div>
+                    )}
+                    {/* Dormitorios */}
+                    {property.dormitorios && (
+                      <div className="flex items-center p-2 bg-white rounded-lg shadow-sm min-w-[130px] gap-1">
+                        <Bed className="h-4 w-4 text-blue-600 font-bold" />
+                        <span className="font-bold text-gray-900 text-sm">{property.dormitorios}</span>
+                        <span className="text-gray-700 text-sm ml-1">Dormitorios</span>
+                      </div>
+                    )}
+                    {/* Baños */}
+                    {property.banos && (
+                      <div className="flex items-center p-2 bg-white rounded-lg shadow-sm min-w-[110px] gap-1">
+                        <Bath className="h-4 w-4 text-blue-600 font-bold" />
+                        <span className="font-bold text-gray-900 text-sm">{property.banos}</span>
+                        <span className="text-gray-700 text-sm ml-1">Baños</span>
+                      </div>
+                    )}
+                    {/* Tipo */}
+                    <div className="flex items-center p-2 bg-white rounded-lg shadow-sm min-w-[130px] gap-1">
+                      <Building2 className="h-4 w-4 text-blue-600 font-bold" />
+                      <span className="font-bold text-gray-900 text-sm">{property.tipo_propiedad.nombre}</span>
+                      <span className="text-gray-700 text-sm ml-1">Tipo</span>
+                    </div>
+                  </div>
+                  {/* Características secundarias, solo badges amarillos */}
+                  <div className="mt-4">
+                    <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto">
+                      {property.caracteristicas && property.caracteristicas.length > 0 ? (
+                        property.caracteristicas.map((char) => (
+                          <span
+                            key={char.id}
+                            className="px-3 py-1 bg-white text-yellow-700 border border-yellow-300 rounded-full text-sm whitespace-nowrap shadow-sm"
+                          >
+                            {char.nombre}
+                          </span>
+                        ))
+                      ) : (
+                        <p className="text-gray-500 text-sm">Sin características especificadas</p>
+                      )}
                     </div>
                   </div>
                 </div>

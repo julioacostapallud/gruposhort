@@ -35,13 +35,20 @@ export function PropertyCard({ image, price, moneda, beds, baths, sqft, address,
       transition={{ duration: 0.3 }}
       onClick={onClick}
     >
-      <div className="relative">
+      <div className="relative h-64">
         <NextImage
           src={image || "/placeholder.svg"}
           alt={address}
           width={500}
           height={300}
           className="w-full h-64 object-cover"
+        />
+        {/* Marca de agua con el logo */}
+        <img
+          src="/Logo.svg"
+          alt="Marca de agua Short"
+          className="absolute bottom-0 right-0 opacity-50 pointer-events-none select-none w-40 h-auto drop-shadow-[0_0_8px_white] p-1"
+          style={{ zIndex: 2 }}
         />
         <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
           {tipoPropiedad && (

@@ -169,14 +169,20 @@ export function PropertyPreviewModalMobile({
                <div className="relative h-[200px] bg-gray-100" onClick={() => setShowImageModal(true)}>
                 {images.length > 0 ? (
                   <>
-                    <div className="w-full h-full flex items-center justify-center">
-                                             <NextImage
-                         src={images[currentImageIndex]}
-                         alt={property.titulo}
-                         width={400}
-                         height={200}
-                         className="w-full h-full object-cover"
-                       />
+                    <div className="w-full h-full flex items-center justify-center relative">
+                      <NextImage
+                        src={images[currentImageIndex]}
+                        alt={property.titulo}
+                        width={400}
+                        height={200}
+                        className="w-full h-full object-cover"
+                      />
+                      <img
+                        src="/Logo.svg"
+                        alt="Marca de agua Short"
+                        className="absolute bottom-0 right-0 opacity-50 pointer-events-none select-none w-40 h-auto drop-shadow-[0_0_8px_white] p-1"
+                        style={{ zIndex: 2 }}
+                      />
                     </div>
                     
                     {/* Navigation Arrows */}
