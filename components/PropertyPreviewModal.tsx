@@ -36,6 +36,8 @@ import { PropertyPreviewModalMobile } from './PropertyPreviewModalMobile'
 import { SharePropertyModal } from './SharePropertyModal'
 import { generatePropertyUrl } from '@/lib/utils'
 import { useToast } from "@/hooks/use-toast";
+import { CustomMap } from './CustomMap'
+import { useRouter } from 'next/navigation'
 
 interface PropertyPreviewModalProps {
   property: Propiedad | null
@@ -51,6 +53,7 @@ export function PropertyPreviewModal({
   isAdminMode = false 
 }: PropertyPreviewModalProps) {
   const isMobile = useIsMobile()
+  const router = useRouter()
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [isMapLoaded, setIsMapLoaded] = useState(false)
   const [showImageModal, setShowImageModal] = useState(false);
@@ -64,23 +67,23 @@ export function PropertyPreviewModal({
     setCurrentImageIndex(0)
   }, [property?.id])
 
-  useEffect(() => {
-    setHasStreetView(false);
-    svCheckedRef.current = false;
-    if (property?.direccion?.latitud && property?.direccion?.longitud && (window as any).google && (window as any).google.maps) {
-      const sv = (window as any).google.maps.StreetViewService();
-      const lat = Number(property.direccion.latitud);
-      const lng = Number(property.direccion.longitud);
-      sv.getPanorama({ location: { lat, lng }, radius: 150 }, (data: any, status: string) => {
-        if (status === 'OK') {
-          setHasStreetView(true);
-        } else {
-          setHasStreetView(false);
-        }
-        svCheckedRef.current = true;
-      });
-    }
-  }, [property?.direccion?.latitud, property?.direccion?.longitud]);
+  // useEffect(() => {
+  //   setHasStreetView(false);
+  //   svCheckedRef.current = false;
+  //   if (property?.direccion?.latitud && property?.direccion?.longitud && (window as any).google && (window as any).google.maps) {
+  //     const sv = (window as any).google.maps.StreetViewService();
+  //     const lat = Number(property.direccion.latitud);
+  //     const lng = Number(property.direccion.longitud);
+  //     sv.getPanorama({ location: { lat, lng }, radius: 150 }, (data: any, status: string) => {
+  //       if (status === 'OK') {
+  //         setHasStreetView(true);
+  //       } else {
+  //         setHasStreetView(false);
+  //       }
+  //       svCheckedRef.current = true;
+  //     });
+  //   }
+  // }, [property?.direccion?.latitud, property?.direccion?.longitud]);
 
   // Si es móvil, renderizar la versión móvil
   if (isMobile) {
@@ -318,15 +321,11 @@ export function PropertyPreviewModal({
                     {/* Mapa (solo mapa tradicional, sin streetview) */}
                     {property.direccion?.latitud && property.direccion?.longitud ? (
                       <div className="h-[300px] bg-gray-100 rounded relative overflow-hidden">
-                        <iframe
-                          src={getGoogleMapsEmbedUrl(property.direccion.latitud, property.direccion.longitud)}
-                          width="100%"
-                          height="100%"
-                          style={{ border: 0 }}
-                          allowFullScreen
-                          loading="lazy"
-                          referrerPolicy="no-referrer-when-downgrade"
-                          className="rounded"
+                        <CustomMap 
+                          lat={parseFloat(property.direccion.latitud)} 
+                          lng={parseFloat(property.direccion.longitud)} 
+                          height="100%" 
+                          width="100%" 
                         />
                       </div>
                     ) : (
@@ -355,7 +354,7 @@ export function PropertyPreviewModal({
                             </div>
                             <div className="flex items-center">
                               <Eye className="h-4 w-4 mr-2" />
-                              <span>24 vistas</span>
+                              <span>{property.estadisticas_visitas?.visitas_totales || 0} vistas</span>
                             </div>
                           </div>
                         </div>
@@ -435,6 +434,17 @@ export function PropertyPreviewModal({
                             <Heart className="h-4 w-4 mr-2" />
                             Favorito
                           </button> */}
+                          <button 
+                            onClick={() => {
+                              const url = generatePropertyUrl(property);
+                              router.push(url);
+                              onClose();
+                            }}
+                            className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center"
+                          >
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                            Ver página completa
+                          </button>
                           <button 
                             onClick={() => setShowShareModal(true)}
                             className="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center justify-center"

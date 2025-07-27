@@ -48,6 +48,11 @@ export interface Propiedad {
     email: string | null;
     telefono: string | null;
   }>;
+  estadisticas_visitas: {
+    visitas_totales: number;
+    visitas_pc: number;
+    visitas_movil: number;
+  };
 }
 
 export interface NewPropiedad {

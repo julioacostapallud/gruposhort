@@ -36,6 +36,7 @@ import { getGoogleMapsEmbedUrl } from '@/lib/config/maps'
 import { SharePropertyModal } from './SharePropertyModal'
 import { generatePropertyUrl } from '@/lib/utils'
 import { Carousel, CarouselContent, CarouselItem } from './ui/carousel'
+import { useRouter } from 'next/navigation'
 
 interface PropertyPreviewModalMobileProps {
   property: Propiedad | null
@@ -50,6 +51,7 @@ export function PropertyPreviewModalMobile({
   onClose, 
   isAdminMode = false 
 }: PropertyPreviewModalMobileProps) {
+  const router = useRouter()
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [showImageModal, setShowImageModal] = useState(false)
   const [activeTab, setActiveTab] = useState<'details' | 'contact' | 'location'>('details')
@@ -412,9 +414,16 @@ export function PropertyPreviewModalMobile({
 
                       {/* Action Buttons */}
                       <div className="flex space-x-3">
-                        <button className="flex-1 bg-gray-100 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center justify-center">
-                          <Heart className="h-4 w-4 mr-2" />
-                          Favorito
+                        <button 
+                          onClick={() => {
+                            const url = generatePropertyUrl(property);
+                            router.push(url);
+                            onClose();
+                          }}
+                          className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center"
+                        >
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          Ver página completa
                         </button>
                         <button 
                           onClick={() => setShowShareModal(true)}

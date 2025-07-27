@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { propiedades } from '@/lib/services/propiedades'
 import { PropertyDetail } from '@/components/PropertyDetail'
 import { PropertyNotFound } from '@/components/PropertyNotFound'
+import { VisitaTracker } from '@/components/VisitaTracker'
 
 interface PropertyPageProps {
   params: {
@@ -63,7 +64,12 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
       return <PropertyNotFound propertyId={propertyId} />
     }
 
-    return <PropertyDetail property={property} />
+    return (
+      <>
+        <VisitaTracker propiedadId={propertyId} />
+        <PropertyDetail property={property} />
+      </>
+    )
   } catch (error) {
     console.error('Error loading property:', error)
     notFound()

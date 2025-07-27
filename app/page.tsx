@@ -11,6 +11,7 @@ import { TasacionesSection } from "@/components/boost-section"
 import { ExploreSection } from "@/components/explore-section"
 import { TrendsSection } from "@/components/trends-section"
 import { propiedades, Propiedad } from "@/lib/services/propiedades"
+import { useVisitas } from "@/lib/services/visitas"
 import { useEffect, useState } from "react"
 import { useSelector } from "react-redux"
 import { RootState } from "@/lib/store/store"
@@ -28,6 +29,7 @@ export default function Home() {
   
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth as any)
   const router = useRouter()
+  const { registrarVisitaPagina, registrarVisitaPropiedad } = useVisitas()
 
   // Función para formatear el precio con la moneda de la propiedad
   const formatPrice = (price: string, moneda: any) => {
@@ -51,6 +53,11 @@ export default function Home() {
       })
       .catch(err => console.error("Error al cargar propiedades:", err))
   }, [])
+
+  // Registrar visita a la página principal solo una vez
+  useEffect(() => {
+    registrarVisitaPagina()
+  }, [registrarVisitaPagina])
 
   // Función para manejar los filtros
   const handleFilter = (filters: any) => {
@@ -223,15 +230,20 @@ export default function Home() {
                     address={`${p.direccion?.calle ?? ''} ${p.direccion?.numero ?? ''}`}
                     city={`${p.direccion?.ciudad ?? ''}, ${p.direccion?.provincia ?? ''}${p.direccion?.barrio ? ` - ${p.direccion.barrio}` : ''}`}
                     status={p.estado_situacion.nombre}
-                    daysAgo={1}
+                    fecha_publicacion={p.fecha_publicacion}
                     tipoPropiedad={p.tipo_propiedad?.nombre}
                     estadoComercial={p.estado_comercial?.nombre}
-                    estadoSituacion={p.estado_situacion?.nombre}
+                    estadoSituacion={p.estado_situacion}
                     estadoFisico={p.estado_fisico?.nombre}
                     ancho_m={p.ancho_m ?? undefined}
                     largo_m={p.largo_m ?? undefined}
                     antiguedad={p.antiguedad ?? undefined}
-                    onClick={() => { setSelectedProperty(p); setShowPreview(true); }}
+                    onClick={() => { 
+                      setSelectedProperty(p); 
+                      setShowPreview(true); 
+                      // Registrar visita a la propiedad
+                      registrarVisitaPropiedad(p.id);
+                    }}
                   />
                 ))}
               </div>

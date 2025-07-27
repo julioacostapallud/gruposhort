@@ -4,7 +4,7 @@ import { Footer } from '../../components/footer'
 import { PropertiesTable } from '../../components/PropertiesTable';
 import { PropertyForm } from '../../components/PropertyForm';
 import { PropertyEditForm } from '../../components/PropertyEditForm';
-import { Plus, Filter, X } from 'lucide-react';
+import { Plus, Filter, X, Eye } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Propiedad } from '../../lib/services/propiedades';
 import { useSelector, useDispatch } from 'react-redux';
@@ -14,6 +14,7 @@ import { useRouter } from 'next/navigation';
 import Select from 'react-select';
 import { api } from '../../lib/services/apiClient';
 import { solicitudes } from '../../lib/services/solicitudes'
+import { visitas } from '../../lib/services/visitas'
 import { Button } from "@/components/ui/button" // Usa tu propio botón o reemplaza por button nativo
 import {
   Table,
@@ -257,14 +258,21 @@ export default function AdminPage() {
   const [adminView, setAdminView] = useState<'panel' | 'tasaciones' | 'venderAlquilar'>('panel');
   const [tasacionesPendientes, setTasacionesPendientes] = useState(0);
   const [ventasPendientes, setVentasPendientes] = useState(0);
+  const [visitasSitio, setVisitasSitio] = useState(0);
 
-  // Cargar contadores de pendientes
+  // Cargar contadores de pendientes y visitas del sitio
   useEffect(() => {
     solicitudes.listarTasaciones().then(data => {
       setTasacionesPendientes(data.filter((s: any) => !s.atendido).length)
     })
     solicitudes.listarVenderAlquilar().then(data => {
       setVentasPendientes(data.filter((s: any) => !s.atendido).length)
+    })
+    // Cargar estadísticas de visitas del sitio
+    visitas.obtenerEstadisticasPagina('hoy').then(data => {
+      setVisitasSitio(data.estadisticas.visitas_totales)
+    }).catch(error => {
+      console.error('Error cargando visitas del sitio:', error)
     })
   }, [adminView])
 
@@ -473,7 +481,16 @@ export default function AdminPage() {
             {/* Hero Section - Solo HTML nativo y Tailwind */}
             <section className="relative bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
               <div className="container mx-auto px-4 text-center">
-                <h1 className="text-4xl md:text-5xl font-bold mb-6">Panel Admin</h1>
+                <div className="flex items-center justify-center gap-4 mb-6">
+                  <h1 className="text-4xl md:text-5xl font-bold">Panel Admin</h1>
+                  
+                  {/* Badge de visitas al sitio */}
+                  <div className="inline-flex items-center bg-yellow-400 text-yellow-900 px-4 py-2 rounded-full text-sm font-medium shadow-lg">
+                    <Eye className="h-4 w-4 mr-2" />
+                    Visitas al sitio: {visitasSitio}
+                  </div>
+                </div>
+                
                 <p className="text-xl mb-8 max-w-2xl mx-auto">
                   Administra y visualiza todas las propiedades de Short Grupo Inmobiliario
                 </p>

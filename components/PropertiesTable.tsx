@@ -262,6 +262,14 @@ export function PropertiesTable({ onViewProperty, onEditProperty, onNewProperty,
                     </div>
                   </div>
 
+                  {/* Badge de visitas en margen inferior izquierdo */}
+                  <div className="absolute bottom-4 left-4">
+                    <div className="bg-yellow-400 text-yellow-900 px-3 py-1 rounded-md text-sm font-medium flex items-center gap-1 shadow-lg">
+                      <Eye className="h-3 w-3" />
+                      {property.estadisticas_visitas?.visitas_totales || 0}
+                    </div>
+                  </div>
+
                   {/* Precio */}
                   <div className="absolute bottom-4 right-4">
                     <div className="bg-white/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">

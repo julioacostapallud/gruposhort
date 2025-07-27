@@ -14,10 +14,10 @@ interface PropertyCardProps {
   address: string
   city: string
   status: string
-  daysAgo: number
+  fecha_publicacion?: string
   tipoPropiedad?: string
   estadoComercial?: string
-  estadoSituacion?: string
+  estadoSituacion?: any
   estadoFisico?: string
   ancho_m?: string
   largo_m?: string
@@ -25,7 +25,49 @@ interface PropertyCardProps {
   onClick?: () => void
 }
 
-export function PropertyCard({ image, price, moneda, beds, baths, sqft, address, city, status, daysAgo, tipoPropiedad, estadoComercial, estadoSituacion, estadoFisico, ancho_m, largo_m, antiguedad, onClick }: PropertyCardProps) {
+export function PropertyCard({ image, price, moneda, beds, baths, sqft, address, city, status, fecha_publicacion, tipoPropiedad, estadoComercial, estadoSituacion, estadoFisico, ancho_m, largo_m, antiguedad, onClick }: PropertyCardProps) {
+  
+  const getEstadoSituacionColor = (estadoSituacion: any) => {
+    if (!estadoSituacion || !estadoSituacion.id) return 'bg-gray-100/60';
+    
+    switch (estadoSituacion.id) {
+      case 1: return 'bg-green-100/60'; // Verde
+      case 2: return 'bg-orange-100/60'; // Naranja
+      case 3: return 'bg-red-100/60'; // Rojo
+      case 4: return 'bg-red-100/60'; // Rojo
+      case 5: return 'bg-yellow-100/60'; // Amarillo
+      default: return 'bg-gray-100/60'; // Gris
+    }
+  };
+
+  const getEstadoSituacionDropShadow = (estadoSituacion: any) => {
+    if (!estadoSituacion || !estadoSituacion.id) return 'drop-shadow-[0_0_6px_rgba(200,200,200,0.7)]';
+    
+    switch (estadoSituacion.id) {
+      case 1: return 'drop-shadow-[0_0_6px_rgba(200,255,200,0.7)]'; // Verde
+      case 2: return 'drop-shadow-[0_0_6px_rgba(255,200,100,0.7)]'; // Naranja
+      case 3: return 'drop-shadow-[0_0_6px_rgba(255,200,200,0.7)]'; // Rojo
+      case 4: return 'drop-shadow-[0_0_6px_rgba(255,200,200,0.7)]'; // Rojo
+      case 5: return 'drop-shadow-[0_0_6px_rgba(255,255,200,0.7)]'; // Amarillo
+      default: return 'drop-shadow-[0_0_6px_rgba(200,200,200,0.7)]'; // Gris
+    }
+  };
+
+  const getDaysAgo = (fecha_publicacion: string) => {
+    if (!fecha_publicacion) return 'Hace 1 día';
+    
+    const fechaPub = new Date(fecha_publicacion);
+    const fechaActual = new Date();
+    const diferenciaMs = fechaActual.getTime() - fechaPub.getTime();
+    const diferenciaDias = Math.floor(diferenciaMs / (1000 * 60 * 60 * 24));
+    
+    if (diferenciaDias === 0) return 'Hoy';
+    if (diferenciaDias === 1) return 'Hace 1 día';
+    return `Hace ${diferenciaDias} días`;
+  };
+
+  const daysAgoText = getDaysAgo(fecha_publicacion || '');
+
   return (
     <motion.div
       className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow cursor-pointer"
@@ -63,12 +105,6 @@ export function PropertyCard({ image, price, moneda, beds, baths, sqft, address,
               <span className="drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]">{estadoComercial}</span>
             </div>
           )}
-          {estadoSituacion && (
-            <div className="bg-green-100/60 text-gray-900 font-semibold px-3 py-1 rounded-md text-sm flex items-center gap-1 shadow-sm backdrop-blur-sm drop-shadow-[0_0_6px_rgba(200,255,200,0.7)]">
-              <Shield className="h-4 w-4 mr-1 text-blue-700" />
-              <span className="drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]">{estadoSituacion}</span>
-            </div>
-          )}
           {estadoFisico && (
             <div className="bg-yellow-100/60 text-gray-900 font-semibold px-3 py-1 rounded-md text-sm flex items-center gap-1 shadow-sm backdrop-blur-sm drop-shadow-[0_0_6px_rgba(255,255,200,0.7)]">
               <Wrench className="h-4 w-4 mr-1 text-blue-700" />
@@ -76,8 +112,16 @@ export function PropertyCard({ image, price, moneda, beds, baths, sqft, address,
             </div>
           )}
         </div>
-        <div className="absolute top-4 right-4 bg-white text-gray-800 px-3 py-1 rounded-md text-sm">
-          {daysAgo === 1 ? "Hace 1 día" : `Hace ${daysAgo} días`}
+        <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
+          <div className="bg-white text-gray-800 px-3 py-1 rounded-md text-sm">
+            {daysAgoText}
+          </div>
+          {estadoSituacion && (
+            <div className={`${getEstadoSituacionColor(estadoSituacion)} text-gray-900 font-semibold px-3 py-1 rounded-md text-sm flex items-center gap-1 shadow-sm backdrop-blur-sm ${getEstadoSituacionDropShadow(estadoSituacion)}`}>
+              <Shield className="h-4 w-4 mr-1 text-blue-700" />
+              <span className="drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]">{estadoSituacion.nombre || estadoSituacion}</span>
+            </div>
+          )}
         </div>
       </div>
       <div className="p-6">
