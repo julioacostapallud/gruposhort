@@ -1,11 +1,13 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { Calculator, Gavel, FileText, Scale, Building, Award, CheckCircle } from "lucide-react"
+import { Calculator, Gavel, FileText, Scale, Building, Award, CheckCircle, X } from "lucide-react"
 import NextImage from "next/image"
 import { useState } from "react"
 import { solicitudes } from "@/lib/services/solicitudes"
 import { useToast } from "@/hooks/use-toast"
+import { ButtonSpinner } from '@/components/ui/spinner'
+import { useEscapeKey } from '@/hooks/useEscapeKey'
 
 export function TasacionesSection() {
   const [showForm, setShowForm] = useState(false)
@@ -13,6 +15,9 @@ export function TasacionesSection() {
   const [enviado, setEnviado] = useState(false)
   const [loading, setLoading] = useState(false)
   const { toast } = useToast();
+
+  // Usar el hook para manejar Escape
+  useEscapeKey(() => handleClose(), showForm)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -36,6 +41,12 @@ export function TasacionesSection() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleClose = () => {
+    setShowForm(false)
+    setEnviado(false)
+    setForm({ nombre: '', email: '', telefono: '', mensaje: '' })
   }
 
   return (
@@ -113,7 +124,26 @@ export function TasacionesSection() {
                 </>
               )}
               {showForm && !enviado && (
-                <form className="space-y-4" onSubmit={handleSubmit}>
+                <form 
+                  className="space-y-4" 
+                  onSubmit={handleSubmit}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      handleClose()
+                    }
+                  }}
+                  tabIndex={0}
+                >
+                  <div className="flex justify-between items-center mb-4">
+                    <h4 className="font-bold text-lg text-white">Solicitar Tasación</h4>
+                    <button
+                      type="button"
+                      onClick={handleClose}
+                      className="text-white hover:text-gray-300 transition-colors p-1"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
                   <div>
                     <label className="block text-sm text-white mb-1" htmlFor="nombre">Nombre</label>
                     <input
@@ -167,7 +197,7 @@ export function TasacionesSection() {
                     disabled={loading}
                     className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
                   >
-                    {loading ? 'Enviando...' : 'Enviar solicitud'}
+                    {loading ? <ButtonSpinner text="Enviando..." /> : 'Enviar solicitud'}
                   </button>
                 </form>
               )}
@@ -175,7 +205,14 @@ export function TasacionesSection() {
                 <div className="flex flex-col items-center justify-center py-8">
                   <CheckCircle className="h-12 w-12 text-green-400 mb-4" />
                   <h4 className="text-xl font-bold text-white mb-2">¡Solicitud enviada!</h4>
-                  <p className="text-gray-200 text-center">Gracias por contactarnos. Nos comunicaremos a la brevedad.</p>
+                  <p className="text-gray-200 text-center mb-4">Gracias por contactarnos. Nos comunicaremos a la brevedad.</p>
+                  <button
+                    onClick={handleClose}
+                    className="bg-white text-gray-900 px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition-colors flex items-center gap-2"
+                  >
+                    <FileText className="h-4 w-4" />
+                    Nueva Solicitud
+                  </button>
                 </div>
               )}
             </div>

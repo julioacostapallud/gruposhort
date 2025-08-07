@@ -1,8 +1,10 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { Bed, Bath, Square, Building2, Tag, Shield, Wrench, Ruler, Calendar, MapPin } from "lucide-react"
-import NextImage from "next/image"
+import { Bed, Bath, Square, Building2, Tag, Shield, Wrench, Ruler, Calendar, MapPin, QrCode, Download } from "lucide-react"
+import { OptimizedImage } from "./OptimizedImage"
+import QRCode from 'qrcode'
+import { generatePropertyUrl } from '@/lib/utils'
 
 interface PropertyCardProps {
   image: string
@@ -23,9 +25,11 @@ interface PropertyCardProps {
   largo_m?: string
   antiguedad?: number
   onClick?: () => void
+  property?: any // Agregar la propiedad completa para generar el QR
+  showQRDownload?: boolean // Prop para mostrar/ocultar el botón de QR
 }
 
-export function PropertyCard({ image, price, moneda, beds, baths, sqft, address, city, status, fecha_publicacion, tipoPropiedad, estadoComercial, estadoSituacion, estadoFisico, ancho_m, largo_m, antiguedad, onClick }: PropertyCardProps) {
+export function PropertyCard({ image, price, moneda, beds, baths, sqft, address, city, status, fecha_publicacion, tipoPropiedad, estadoComercial, estadoSituacion, estadoFisico, ancho_m, largo_m, antiguedad, onClick, property, showQRDownload }: PropertyCardProps) {
   
   const getEstadoSituacionColor = (estadoSituacion: any) => {
     if (!estadoSituacion || !estadoSituacion.id) return 'bg-gray-100/60';
@@ -68,6 +72,87 @@ export function PropertyCard({ image, price, moneda, beds, baths, sqft, address,
 
   const daysAgoText = getDaysAgo(fecha_publicacion || '');
 
+  const downloadQR = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // Evitar que se active el onClick de la card
+    
+    if (!property) return;
+    
+    try {
+      const propertyUrl = generatePropertyUrl(property);
+      
+      // Generar QR base
+      const qrDataUrl = await QRCode.toDataURL(propertyUrl, {
+        width: 400,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+      
+      // Crear canvas para combinar QR con logo
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = 400;
+      canvas.height = 400;
+      
+      // Cargar imagen del QR
+      const qrImage = new Image();
+      qrImage.onload = () => {
+        // Dibujar QR en el canvas
+        ctx?.drawImage(qrImage, 0, 0, 400, 400);
+        
+        // Cargar logo
+        const logoImage = new Image();
+        logoImage.crossOrigin = 'anonymous';
+        logoImage.onload = () => {
+          // Calcular dimensiones del logo manteniendo proporción
+          const maxLogoSize = 100; // Tamaño máximo del logo
+          const logoAspectRatio = logoImage.width / logoImage.height;
+          
+          let logoWidth, logoHeight;
+          if (logoAspectRatio > 1) {
+            // Logo más ancho que alto
+            logoWidth = maxLogoSize;
+            logoHeight = maxLogoSize / logoAspectRatio;
+          } else {
+            // Logo más alto que ancho o cuadrado
+            logoHeight = maxLogoSize;
+            logoWidth = maxLogoSize * logoAspectRatio;
+          }
+          
+          const logoX = (400 - logoWidth) / 2;
+          const logoY = (400 - logoHeight) / 2;
+          
+          // Dibujar fondo blanco para el logo
+          ctx!.fillStyle = '#FFFFFF';
+          ctx!.fillRect(logoX - 4, logoY - 4, logoWidth + 8, logoHeight + 8);
+          
+          // Dibujar logo con sus dimensiones originales
+          ctx?.drawImage(logoImage, logoX, logoY, logoWidth, logoHeight);
+          
+          // Crear link de descarga
+          const link = document.createElement('a');
+          link.download = `qr-${property.titulo?.replace(/[^a-zA-Z0-9]/g, '-') || 'propiedad'}.png`;
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+        };
+        logoImage.onerror = () => {
+          // Si falla el logo, descargar solo el QR
+          const link = document.createElement('a');
+          link.download = `qr-${property.titulo?.replace(/[^a-zA-Z0-9]/g, '-') || 'propiedad'}.png`;
+          link.href = qrDataUrl;
+          link.click();
+        };
+        logoImage.src = '/Logo.svg';
+      };
+      qrImage.src = qrDataUrl;
+      
+    } catch (error) {
+      console.error('Error generando QR:', error);
+    }
+  };
+
   return (
     <motion.div
       className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow cursor-pointer"
@@ -78,12 +163,13 @@ export function PropertyCard({ image, price, moneda, beds, baths, sqft, address,
       onClick={onClick}
     >
       <div className="relative h-64">
-        <NextImage
+        <OptimizedImage
           src={image || "/placeholder.svg"}
-          alt={address}
+          alt={`${tipoPropiedad || 'Propiedad'} en ${address}, ${city} - ${price} ${moneda?.simbolo || ''} - Short Grupo Inmobiliario Resistencia Chaco`}
           width={500}
           height={300}
           className="w-full h-64 object-cover"
+          priority={false}
         />
         {/* Marca de agua con el logo */}
         <img
@@ -121,6 +207,17 @@ export function PropertyCard({ image, price, moneda, beds, baths, sqft, address,
               <Shield className="h-4 w-4 mr-1 text-blue-700" />
               <span className="drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]">{estadoSituacion.nombre || estadoSituacion}</span>
             </div>
+          )}
+          {/* Botón de descarga de QR - solo visible en admin */}
+          {showQRDownload && property && (
+            <button
+              onClick={downloadQR}
+              className="bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-md shadow-lg backdrop-blur-sm transition-colors duration-200 flex items-center gap-1"
+              title="Descargar QR para cartel"
+            >
+              <QrCode className="h-4 w-4" />
+              <Download className="h-3 w-3" />
+            </button>
           )}
         </div>
       </div>

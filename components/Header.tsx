@@ -7,6 +7,8 @@ import { User, LogOut, X, Phone, Mail, MapPin, Power, Home, FileText, Users, Lay
 import { useState } from "react"
 import { solicitudes } from "@/lib/services/solicitudes"
 import { useToast } from "@/hooks/use-toast"
+import { ButtonSpinner } from '@/components/ui/spinner'
+import { useEscapeKey } from '@/hooks/useEscapeKey'
 
 interface HeaderProps {
   variant?: 'main' | 'admin'
@@ -40,6 +42,9 @@ export function Header({
   const [contactLoading, setContactLoading] = useState(false)
   const [contactEnviado, setContactEnviado] = useState(false)
   const { toast } = useToast();
+
+  // Usar el hook para manejar Escape
+  useEscapeKey(() => setShowContactModal(false), showContactModal)
 
   const handleLogout = async () => {
     await dispatch(logoutUser() as any)
@@ -190,7 +195,15 @@ export function Header({
 
       {/* Modal de Contacto */}
       {showContactModal && (
-        <div className="fixed inset-0 z-50 flex items-start justify-end p-4">
+        <div 
+          className="fixed inset-0 z-50 flex items-start justify-end p-4"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setShowContactModal(false)
+            }
+          }}
+          tabIndex={0}
+        >
           <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => setShowContactModal(false)} />
           <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md p-6 mt-16">
             <div className="flex justify-between items-center mb-4">
@@ -297,7 +310,7 @@ export function Header({
                   disabled={contactLoading}
                   className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors font-medium disabled:opacity-60"
                 >
-                  {contactLoading ? 'Enviando...' : 'Enviar solicitud'}
+                  {contactLoading ? <ButtonSpinner text="Enviando..." /> : 'Enviar solicitud'}
                 </button>
               </form>
             ) : (
@@ -315,7 +328,7 @@ export function Header({
                 </div>
                 <div className="flex items-center">
                   <Mail size={16} className="mr-2" />
-                  <span>contacto@shortinmobiliaria.com</span>
+                  <span>leonardofabianshort@gmail.com</span>
                 </div>
               </div>
               <div className="flex items-center text-sm text-gray-600">

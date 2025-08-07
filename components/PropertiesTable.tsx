@@ -21,7 +21,9 @@ import {
   X,
   SlidersHorizontal,
   Trash2,
-  Calendar
+  Calendar,
+  QrCode,
+  Download
 } from 'lucide-react'
 import { Propiedad } from '@/lib/services/propiedades'
 import { propiedadesConDelete as propiedades } from '@/lib/services/propiedades'
@@ -29,18 +31,30 @@ import NextImage from "next/image"
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from './ui/dialog'
 import { useToast } from '@/hooks/use-toast'
 import { PropertyPreviewModal } from './PropertyPreviewModal'
+import QRCode from 'qrcode'
+import { generatePropertyUrl } from '@/lib/utils'
+import { Spinner } from '@/components/ui/spinner'
 
 interface PropertiesTableProps {
   onViewProperty: (property: Propiedad) => void
   onEditProperty: (property: Propiedad) => void
   onNewProperty: () => void
   propertiesVersion?: number
+  filteredProperties?: Propiedad[] // Nueva prop para propiedades filtradas
+  searchTerm?: string // Nueva prop para término de búsqueda
 }
 
-export function PropertiesTable({ onViewProperty, onEditProperty, onNewProperty, propertiesVersion }: PropertiesTableProps) {
+export function PropertiesTable({ 
+  onViewProperty, 
+  onEditProperty, 
+  onNewProperty, 
+  propertiesVersion,
+  filteredProperties,
+  searchTerm
+}: PropertiesTableProps) {
   const [properties, setProperties] = useState<Propiedad[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
+  const [localSearchTerm, setLocalSearchTerm] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [filters, setFilters] = useState({
     tipo_propiedad: 'all',
@@ -59,9 +73,20 @@ export function PropertiesTable({ onViewProperty, onEditProperty, onNewProperty,
   const [previewProperty, setPreviewProperty] = useState<Propiedad | null>(null);
   const [showPreview, setShowPreview] = useState(false);
 
+  // Usar propiedades filtradas si se proporcionan, sino cargar todas
+  const displayProperties = filteredProperties || properties;
+  
+  // Usar searchTerm externo si se proporciona, sino usar local
+  const effectiveSearchTerm = searchTerm || localSearchTerm;
+
   useEffect(() => {
-    loadProperties()
-  }, [propertiesVersion])
+    if (!filteredProperties) {
+      loadProperties()
+    } else {
+      // Si se proporcionan filteredProperties, no cargar propiedades locales
+      setLoading(false)
+    }
+  }, [propertiesVersion, filteredProperties])
 
   const loadProperties = async () => {
     try {
@@ -101,9 +126,9 @@ export function PropertiesTable({ onViewProperty, onEditProperty, onNewProperty,
       case 'reservada':
         return <Clock className="h-4 w-4 text-yellow-600" />;
       case 'vendida':
-        return <Star className="h-4 w-4 text-blue-600" />;
+        return <AlertCircle className="h-4 w-4 text-red-600" />;
       default:
-        return <AlertCircle className="h-4 w-4 text-gray-600" />;
+        return <Star className="h-4 w-4 text-blue-600" />;
     }
   }
 
@@ -119,11 +144,11 @@ export function PropertiesTable({ onViewProperty, onEditProperty, onNewProperty,
       min_superficie: '',
       max_superficie: ''
     })
-    setSearchTerm('')
+    setLocalSearchTerm('')
   }
 
   const hasActiveFilters = () => {
-    return searchTerm || 
+    return effectiveSearchTerm || 
            filters.tipo_propiedad !== 'all' || 
            filters.estado_comercial !== 'all' || 
            filters.estado_situacion !== 'all' || 
@@ -135,63 +160,157 @@ export function PropertiesTable({ onViewProperty, onEditProperty, onNewProperty,
            filters.max_superficie
   }
 
-  const filteredProperties = properties.filter(property => {
-    const matchesSearch = property.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         property.descripcion?.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    const matchesTipo = filters.tipo_propiedad === 'all' || 
-                       property.tipo_propiedad.id.toString() === filters.tipo_propiedad
-    
-    const matchesEstadoComercial = filters.estado_comercial === 'all' || 
-                                  property.estado_comercial.id.toString() === filters.estado_comercial
-    
-    const matchesEstadoSituacion = filters.estado_situacion === 'all' || 
-                                  property.estado_situacion.id.toString() === filters.estado_situacion
-    
-    const matchesEstadoRegistro = filters.estado_registro === 'all' || 
-                                 property.estado_registro.id.toString() === filters.estado_registro
-    
-    const matchesEstadoFisico = filters.estado_fisico === 'all' || 
-                               property.estado_fisico.id.toString() === filters.estado_fisico
-    
-    const matchesMinPrice = !filters.min_precio || parseFloat(property.precio) >= parseFloat(filters.min_precio)
-    const matchesMaxPrice = !filters.max_precio || parseFloat(property.precio) <= parseFloat(filters.max_precio)
-    
-    const matchesMinSuperficie = !filters.min_superficie || 
-                                (property.superficie_m2 && parseFloat(property.superficie_m2) >= parseFloat(filters.min_superficie))
-    const matchesMaxSuperficie = !filters.max_superficie || 
-                                (property.superficie_m2 && parseFloat(property.superficie_m2) <= parseFloat(filters.max_superficie))
-    
-    return matchesSearch && matchesTipo && matchesEstadoComercial && matchesEstadoSituacion && 
-           matchesEstadoRegistro && matchesEstadoFisico && matchesMinPrice && matchesMaxPrice && 
-           matchesMinSuperficie && matchesMaxSuperficie
-  })
+  // Filtrar propiedades localmente solo si NO se proporcionan filteredProperties
+  const finalFilteredProperties = filteredProperties ? 
+    displayProperties : // Si se proporcionan filteredProperties, usarlas directamente
+    displayProperties.filter(property => {
+      const matchesSearch = property.titulo.toLowerCase().includes(effectiveSearchTerm.toLowerCase()) ||
+                           property.descripcion?.toLowerCase().includes(effectiveSearchTerm.toLowerCase())
+      
+      const matchesTipo = filters.tipo_propiedad === 'all' || 
+                         property.tipo_propiedad.nombre.toLowerCase() === filters.tipo_propiedad.toLowerCase()
+      
+      const matchesEstadoComercial = filters.estado_comercial === 'all' || 
+                                    property.estado_comercial.nombre.toLowerCase() === filters.estado_comercial.toLowerCase()
+      
+      const matchesEstadoSituacion = filters.estado_situacion === 'all' || 
+                                    property.estado_situacion.nombre.toLowerCase() === filters.estado_situacion.toLowerCase()
+      
+      const matchesEstadoRegistro = filters.estado_registro === 'all' || 
+                                   property.estado_registro.nombre.toLowerCase() === filters.estado_registro.toLowerCase()
+      
+      const matchesEstadoFisico = filters.estado_fisico === 'all' || 
+                                  property.estado_fisico.nombre.toLowerCase() === filters.estado_fisico.toLowerCase()
+      
+      const precio = parseFloat(property.precio)
+      const matchesMinPrecio = !filters.min_precio || precio >= parseFloat(filters.min_precio)
+      const matchesMaxPrecio = !filters.max_precio || precio <= parseFloat(filters.max_precio)
+      
+      const superficie = parseFloat(property.superficie_m2 || '0')
+      const matchesMinSuperficie = !filters.min_superficie || superficie >= parseFloat(filters.min_superficie)
+      const matchesMaxSuperficie = !filters.max_superficie || superficie <= parseFloat(filters.max_superficie)
+      
+      return matchesSearch && 
+             matchesTipo && 
+             matchesEstadoComercial && 
+             matchesEstadoSituacion && 
+             matchesEstadoRegistro && 
+             matchesEstadoFisico && 
+             matchesMinPrecio && 
+             matchesMaxPrecio && 
+             matchesMinSuperficie && 
+             matchesMaxSuperficie
+    })
 
   const handleDelete = async () => {
     if (!deleteId) return;
+    
     setDeleting(true);
     try {
       await propiedades.delete(deleteId);
-      setProperties(prev => prev.filter(p => p.id !== deleteId));
-      setDeleteId(null);
+      toast({
+        title: "Propiedad eliminada",
+        description: "La propiedad ha sido eliminada exitosamente.",
+      });
+      loadProperties();
     } catch (error) {
       toast({
-        title: 'Error al eliminar',
-        description: 'No se pudo eliminar la propiedad. Intenta nuevamente.',
-        variant: 'destructive',
+        title: "Error",
+        description: "No se pudo eliminar la propiedad.",
+        variant: "destructive",
       });
     } finally {
       setDeleting(false);
+      setDeleteId(null);
+    }
+  };
+
+  const downloadQR = async (property: Propiedad) => {
+    try {
+      const propertyUrl = generatePropertyUrl(property);
+      
+      // Generar QR base
+      const qrDataUrl = await QRCode.toDataURL(propertyUrl, {
+        width: 400,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+      
+      // Crear canvas para combinar QR con logo
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = 400;
+      canvas.height = 400;
+      
+      // Cargar imagen del QR
+      const qrImage = new Image();
+      qrImage.onload = () => {
+        // Dibujar QR en el canvas
+        ctx?.drawImage(qrImage, 0, 0, 400, 400);
+        
+        // Cargar logo
+        const logoImage = new Image();
+        logoImage.crossOrigin = 'anonymous';
+        logoImage.onload = () => {
+          // Calcular dimensiones del logo manteniendo proporción
+          const maxLogoSize = 100; // Tamaño máximo del logo
+          const logoAspectRatio = logoImage.width / logoImage.height;
+          
+          let logoWidth, logoHeight;
+          if (logoAspectRatio > 1) {
+            // Logo más ancho que alto
+            logoWidth = maxLogoSize;
+            logoHeight = maxLogoSize / logoAspectRatio;
+          } else {
+            // Logo más alto que ancho o cuadrado
+            logoHeight = maxLogoSize;
+            logoWidth = maxLogoSize * logoAspectRatio;
+          }
+          
+          const logoX = (400 - logoWidth) / 2;
+          const logoY = (400 - logoHeight) / 2;
+          
+          // Dibujar fondo blanco para el logo
+          ctx!.fillStyle = '#FFFFFF';
+          ctx!.fillRect(logoX - 4, logoY - 4, logoWidth + 8, logoHeight + 8);
+          
+          // Dibujar logo con sus dimensiones originales
+          ctx?.drawImage(logoImage, logoX, logoY, logoWidth, logoHeight);
+          
+          // Crear link de descarga
+          const link = document.createElement('a');
+          link.download = `qr-${property.titulo?.replace(/[^a-zA-Z0-9]/g, '-') || 'propiedad'}.png`;
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+        };
+        logoImage.onerror = () => {
+          // Si falla el logo, descargar solo el QR
+          const link = document.createElement('a');
+          link.download = `qr-${property.titulo?.replace(/[^a-zA-Z0-9]/g, '-') || 'propiedad'}.png`;
+          link.href = qrDataUrl;
+          link.click();
+        };
+        logoImage.src = '/Logo.svg';
+      };
+      qrImage.src = qrDataUrl;
+      
+    } catch (error) {
+      console.error('Error generando QR:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo generar el QR.",
+        variant: "destructive",
+      });
     }
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600 text-lg">Cargando propiedades...</p>
-        </div>
+      <div className="flex justify-center items-center py-12">
+        <Spinner size="lg" color="primary" showText text="Cargando propiedades..." />
       </div>
     )
   }
@@ -200,7 +319,7 @@ export function PropertiesTable({ onViewProperty, onEditProperty, onNewProperty,
     <div>
       {/* Grid de Propiedades */}
       <div className="container mx-auto px-4 py-16">
-        {filteredProperties.length === 0 ? (
+        {finalFilteredProperties.length === 0 ? (
           <div className="bg-white rounded-lg shadow-md p-16 text-center">
             <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <Search className="h-10 w-10 text-gray-400" />
@@ -226,7 +345,7 @@ export function PropertiesTable({ onViewProperty, onEditProperty, onNewProperty,
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredProperties.map((property) => (
+            {finalFilteredProperties.map((property) => (
               <div key={property.id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow relative">
                 {/* Botón de eliminar */}
                 <button
@@ -241,7 +360,7 @@ export function PropertiesTable({ onViewProperty, onEditProperty, onNewProperty,
                   {property.imagenes && property.imagenes.length > 0 ? (
                     <img
                       src={typeof property.imagenes[0] === 'string' ? property.imagenes[0] : (property.imagenes[0] as any)?.url}
-                      alt={property.titulo}
+                      alt={`${property.titulo} - ${property.tipo_propiedad.nombre} en ${property.direccion?.ciudad}, ${property.direccion?.provincia} - ${property.precio} ${property.moneda?.simbolo} - Short Grupo Inmobiliario`}
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -394,6 +513,14 @@ export function PropertiesTable({ onViewProperty, onEditProperty, onNewProperty,
                     >
                       <Edit className="h-4 w-4" />
                       Editar
+                    </button>
+                    <button
+                      onClick={() => downloadQR(property)}
+                      className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+                      title="Descargar QR para cartel"
+                    >
+                      <QrCode className="h-4 w-4" />
+                      <Download className="h-3 w-3" />
                     </button>
                   </div>
                 </div>

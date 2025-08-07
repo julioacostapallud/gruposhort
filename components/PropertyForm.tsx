@@ -11,6 +11,7 @@ import { Checkbox } from './ui/checkbox';
 import { Input } from 'reactstrap';
 import Select from 'react-select';
 import { useToast } from "@/hooks/use-toast";
+import { Spinner, ButtonSpinner } from '@/components/ui/spinner'
 
 type Cat = { id: number; nombre: string }
 type Owner = { 
@@ -130,7 +131,8 @@ export function PropertyForm({ onSuccess, onCancel }: PropertyFormProps) {
     longitud: '',
     unidad_funcional: '',
     manzana: '',
-    parcela: ''
+    parcela: '',
+    fecha_publicacion: new Date().toISOString().split('T')[0] // Fecha actual en formato YYYY-MM-DD
   })
 
   useEffect(() => {
@@ -269,7 +271,8 @@ export function PropertyForm({ onSuccess, onCancel }: PropertyFormProps) {
         longitud: form.longitud || undefined,
         unidad_funcional: form.unidad_funcional !== undefined ? form.unidad_funcional : undefined,
         manzana: form.manzana !== undefined ? form.manzana : undefined,
-        parcela: form.parcela !== undefined ? form.parcela : undefined
+        parcela: form.parcela !== undefined ? form.parcela : undefined,
+        fecha_publicacion: form.fecha_publicacion
       };
       console.log('Payload a guardar:', payload);
       const { id: propId } = await propiedades.create(payload)
@@ -477,7 +480,11 @@ export function PropertyForm({ onSuccess, onCancel }: PropertyFormProps) {
   };
 
   if (loading) {
-    return <div className="text-center py-5">Cargando…</div>
+    return (
+      <div className="flex justify-center items-center py-12">
+        <Spinner size="lg" color="primary" showText text="Cargando formulario..." />
+      </div>
+    )
   }
 
   // Opciones de tipo de documento según la tabla
@@ -492,6 +499,7 @@ export function PropertyForm({ onSuccess, onCancel }: PropertyFormProps) {
   return (
     <>
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Primera línea: Título y Tipo de Propiedad */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label htmlFor="titulo" className="block text-sm font-medium text-gray-700 mb-2">
@@ -505,6 +513,45 @@ export function PropertyForm({ onSuccess, onCancel }: PropertyFormProps) {
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
+          </div>
+          
+          <div>
+            <label htmlFor="tipo_propiedad" className="block text-sm font-medium text-gray-700 mb-2">
+              Tipo de Propiedad *
+            </label>
+            <select
+              id="tipo_propiedad"
+              value={form.tipo_propiedad_id}
+              onChange={e => setForm({ ...form, tipo_propiedad_id: +e.target.value })}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value={0}>Seleccionar tipo</option>
+              {tiposProp.map(tipo => (
+                <option key={tipo.id} value={tipo.id}>{tipo.nombre}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Segunda línea: Moneda y Precio */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label htmlFor="moneda" className="block text-sm font-medium text-gray-700 mb-2">
+              Moneda *
+            </label>
+            <select
+              id="moneda"
+              value={form.id_moneda}
+              onChange={e => setForm({ ...form, id_moneda: +e.target.value })}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value={0}>Seleccionar moneda</option>
+              {monedas.map(moneda => (
+                <option key={moneda.id} value={moneda.id}>{moneda.nombre}</option>
+              ))}
+            </select>
           </div>
           
           <div>
@@ -523,6 +570,7 @@ export function PropertyForm({ onSuccess, onCancel }: PropertyFormProps) {
           </div>
         </div>
 
+        {/* Tercera línea: Descripción */}
         <div>
           <label htmlFor="descripcion" className="block text-sm font-medium text-gray-700 mb-2">
             Descripción
@@ -532,6 +580,21 @@ export function PropertyForm({ onSuccess, onCancel }: PropertyFormProps) {
             rows={3}
             value={form.descripcion}
             onChange={e => setForm({ ...form, descripcion: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+
+        {/* Cuarta línea: Fecha */}
+        <div>
+          <label htmlFor="fecha_publicacion" className="block text-sm font-medium text-gray-700 mb-2">
+            Fecha de Publicación *
+          </label>
+          <input
+            id="fecha_publicacion"
+            type="date"
+            value={form.fecha_publicacion}
+            onChange={e => setForm({ ...form, fecha_publicacion: e.target.value })}
+            required
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
@@ -583,7 +646,7 @@ export function PropertyForm({ onSuccess, onCancel }: PropertyFormProps) {
           
           <div>
             <label htmlFor="antiguedad" className="block text-sm font-medium text-gray-700 mb-2">
-              Antigüedad (años)
+              Antigüedad
             </label>
             <input
               id="antiguedad"
@@ -624,43 +687,7 @@ export function PropertyForm({ onSuccess, onCancel }: PropertyFormProps) {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label htmlFor="tipo_propiedad" className="block text-sm font-medium text-gray-700 mb-2">
-              Tipo de Propiedad *
-            </label>
-            <select
-              id="tipo_propiedad"
-              value={form.tipo_propiedad_id}
-              onChange={e => setForm({ ...form, tipo_propiedad_id: +e.target.value })}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value={0}>Seleccionar tipo</option>
-              {tiposProp.map(tipo => (
-                <option key={tipo.id} value={tipo.id}>{tipo.nombre}</option>
-              ))}
-            </select>
-          </div>
-          
-          <div>
-            <label htmlFor="moneda" className="block text-sm font-medium text-gray-700 mb-2">
-              Moneda *
-            </label>
-            <select
-              id="moneda"
-              value={form.id_moneda}
-              onChange={e => setForm({ ...form, id_moneda: +e.target.value })}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value={0}>Seleccionar moneda</option>
-              {monedas.map(moneda => (
-                <option key={moneda.id} value={moneda.id}>{moneda.nombre}</option>
-              ))}
-            </select>
-          </div>
-        </div>
+
 
         {/* Select múltiple de características */}
         <div>
@@ -1001,8 +1028,7 @@ export function PropertyForm({ onSuccess, onCancel }: PropertyFormProps) {
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2" 
               disabled={geoLoading}
             >
-              <MapPin size={14} />
-              {geoLoading ? 'Obteniendo...' : 'Geolocalizar'}
+              {geoLoading ? <ButtonSpinner text="Obteniendo..." /> : 'Geolocalizar'}
             </button>
             <button 
               type="button" 

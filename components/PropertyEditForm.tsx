@@ -138,7 +138,8 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
     longitud: property.direccion?.longitud || '',
     unidad_funcional: property.direccion?.unidad_funcional || '',
     manzana: property.direccion?.manzana || '',
-    parcela: property.direccion?.parcela || ''
+    parcela: property.direccion?.parcela || '',
+    fecha_publicacion: property.fecha_publicacion ? new Date(property.fecha_publicacion).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
   })
 
   // Precarga ciudades si hay provincia inicial (por nombre)
@@ -318,7 +319,8 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
         ...(form.longitud !== property.direccion?.longitud && { longitud: form.longitud ? parseFloat(form.longitud) : undefined }),
         unidad_funcional: form.unidad_funcional || undefined,
         manzana: form.manzana || undefined,
-        parcela: form.parcela || undefined
+        parcela: form.parcela || undefined,
+        fecha_publicacion: form.fecha_publicacion
       };
       console.log('Payload a guardar (edición):', updateData);
       await propiedades.update(property.id, updateData)
@@ -583,7 +585,7 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
     <>
       <div className="space-y-6">
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* 1. Datos principales */}
+          {/* Primera línea: Título y Tipo de Propiedad */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label htmlFor="titulo" className="block text-sm font-medium text-gray-700 mb-2">
@@ -597,6 +599,44 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
+            </div>
+            <div>
+              <label htmlFor="tipo_propiedad" className="block text-sm font-medium text-gray-700 mb-2">
+                Tipo de Propiedad *
+              </label>
+              <select
+                id="tipo_propiedad"
+                value={form.tipo_propiedad_id}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm({ ...form, tipo_propiedad_id: +e.target.value })}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value={0}>Seleccionar tipo</option>
+                {tiposProp.map(tipo => (
+                  <option key={tipo.id} value={tipo.id}>{tipo.nombre}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Segunda línea: Moneda y Precio */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label htmlFor="moneda" className="block text-sm font-medium text-gray-700 mb-2">
+                Moneda *
+              </label>
+              <select
+                id="moneda"
+                value={form.id_moneda}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm({ ...form, id_moneda: +e.target.value })}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value={0}>Seleccionar moneda</option>
+                {monedas.map(moneda => (
+                  <option key={moneda.id} value={moneda.id}>{moneda.nombre}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label htmlFor="precio" className="block text-sm font-medium text-gray-700 mb-2">
@@ -613,6 +653,8 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
               />
             </div>
           </div>
+
+          {/* Tercera línea: Descripción */}
           <div>
             <label htmlFor="descripcion" className="block text-sm font-medium text-gray-700 mb-2">
               Descripción
@@ -622,6 +664,21 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
               rows={3}
               value={form.descripcion}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setForm({ ...form, descripcion: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          {/* Cuarta línea: Fecha */}
+          <div>
+            <label htmlFor="fecha_publicacion" className="block text-sm font-medium text-gray-700 mb-2">
+              Fecha de Publicación *
+            </label>
+            <input
+              id="fecha_publicacion"
+              type="date"
+              value={form.fecha_publicacion}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, fecha_publicacion: e.target.value })}
+              required
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
@@ -669,7 +726,7 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
             </div>
             <div>
               <label htmlFor="antiguedad" className="block text-sm font-medium text-gray-700 mb-2">
-                Antigüedad (años)
+                Antigüedad
               </label>
               <input
                 id="antiguedad"
@@ -724,43 +781,7 @@ export function PropertyEditForm({ property, onSuccess, onCancel }: PropertyEdit
               placeholder="Seleccionar características"
             />
           </div>
-          {/* 3. Estados y moneda */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="tipo_propiedad" className="block text-sm font-medium text-gray-700 mb-2">
-                Tipo de Propiedad *
-              </label>
-              <select
-                id="tipo_propiedad"
-                value={form.tipo_propiedad_id}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm({ ...form, tipo_propiedad_id: +e.target.value })}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value={0}>Seleccionar tipo</option>
-                {tiposProp.map(tipo => (
-                  <option key={tipo.id} value={tipo.id}>{tipo.nombre}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="moneda" className="block text-sm font-medium text-gray-700 mb-2">
-                Moneda *
-              </label>
-              <select
-                id="moneda"
-                value={form.id_moneda}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm({ ...form, id_moneda: +e.target.value })}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value={0}>Seleccionar moneda</option>
-                {monedas.map(moneda => (
-                  <option key={moneda.id} value={moneda.id}>{moneda.nombre}</option>
-                ))}
-              </select>
-            </div>
-          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label htmlFor="estado_comercial" className="block text-sm font-medium text-gray-700 mb-2">

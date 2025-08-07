@@ -9,6 +9,7 @@ import { PropertyEditForm } from "@/components/PropertyEditForm";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Filter, X } from "lucide-react";
 import { Propiedad } from "@/lib/services/propiedades";
+import { Spinner } from '@/components/ui/spinner'
 
 export function AdminPanel() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -89,13 +90,10 @@ export function AdminPanel() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Verificando autenticación...</p>
-        </div>
+      <div className="flex justify-center items-center py-12">
+        <Spinner size="lg" color="primary" showText text="Verificando autenticación..." />
       </div>
-    );
+    )
   }
 
   if (!isAuthenticated) {
@@ -171,7 +169,12 @@ export function AdminPanel() {
       <Dialog open={showNewPropertyModal} onOpenChange={setShowNewPropertyModal}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Nueva Propiedad</DialogTitle>
+            <DialogTitle className="flex items-center justify-between">
+              <span>Nueva Propiedad</span>
+              <span className="text-sm font-normal text-gray-500">
+                Fecha: {new Date().toLocaleDateString('es-AR')}
+              </span>
+            </DialogTitle>
           </DialogHeader>
           <PropertyForm onSuccess={handlePropertySuccess} />
         </DialogContent>
@@ -179,7 +182,14 @@ export function AdminPanel() {
       <Dialog open={showEditPropertyModal} onOpenChange={setShowEditPropertyModal}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Editar Propiedad</DialogTitle>
+            <DialogTitle className="flex items-center justify-between">
+              <span>Editar Propiedad</span>
+              {selectedProperty && (
+                <span className="text-sm font-normal text-gray-500">
+                  Fecha: {new Date(selectedProperty.fecha_publicacion).toLocaleDateString('es-AR')}
+                </span>
+              )}
+            </DialogTitle>
           </DialogHeader>
           {selectedProperty && (
             <PropertyEditForm

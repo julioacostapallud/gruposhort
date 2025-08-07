@@ -5,6 +5,7 @@ import { useVisitas, EstadisticasVisitas } from '@/lib/services/visitas'
 import { Eye, Monitor, Smartphone, TrendingUp } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Spinner } from '@/components/ui/spinner'
 
 interface VisitasStatsProps {
   propiedadId?: number
@@ -44,17 +45,9 @@ export function VisitasStats({ propiedadId, showTitle = true, className = '' }: 
 
   if (loading) {
     return (
-      <Card className={className}>
-        <CardHeader>
-          <CardTitle className="text-sm">Cargando estadísticas...</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="animate-pulse space-y-2">
-            <div className="h-4 bg-gray-200 rounded"></div>
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex justify-center items-center py-8">
+        <Spinner size="md" color="primary" showText text="Cargando estadísticas..." />
+      </div>
     )
   }
 

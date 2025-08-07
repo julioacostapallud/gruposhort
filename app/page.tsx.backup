@@ -200,12 +200,12 @@ export default function Home() {
 
       {/* Hero Section */}
       <section className="relative bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
-        <div className="w-full flex flex-col items-center px-4 md:px-8">
+        <div className="w-full flex flex-col items-center px-2 md:px-8">
           <h1 className="text-4xl md:text-5xl font-bold mb-6 text-center">
             <span className="block">Te conectamos con la propiedad,</span>
             <span className="block">tus sueños la convierten en hogar 🏠</span>
           </h1>
-          <div className="text-sm mb-8 max-w-6xl mx-auto text-center font-medium flex flex-wrap justify-center items-center gap-2 md:gap-4">
+          <div className="text-sm mb-8 max-w-6xl mx-auto text-center font-medium flex flex-wrap justify-center items-center gap-4">
             <div className="flex items-center gap-1">
               <Building className="h-4 w-4" />
               <span>NEGOCIOS INMOBILIARIOS</span>

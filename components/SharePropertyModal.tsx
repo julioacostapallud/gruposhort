@@ -1,12 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Share2, Mail, Link, QrCode, Copy, Check } from 'lucide-react'
-import { WhatsAppIcon, TelegramIcon, InstagramIcon, FacebookIcon } from './ui/social-icons'
+import { WhatsAppIcon, TelegramIcon, FacebookIcon } from './ui/social-icons'
 import { Propiedad } from '@/lib/services/propiedades'
 import { generatePropertyUrl } from '@/lib/utils'
-import { useToast } from '@/hooks/use-toast'
+import QRCode from 'qrcode'
+import { Spinner } from '@/components/ui/spinner'
+import { useEscapeKey } from '@/hooks/useEscapeKey'
 
 interface SharePropertyModalProps {
   property: Propiedad
@@ -15,18 +17,124 @@ interface SharePropertyModalProps {
 }
 
 export function SharePropertyModal({ property, isOpen, onClose }: SharePropertyModalProps) {
-  const { toast } = useToast()
-  const [copied, setCopied] = useState(false)
   const [showQR, setShowQR] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [qrLoading, setQrLoading] = useState(false)
+  const [qrError, setQrError] = useState(false)
+  const [qrDataUrl, setQrDataUrl] = useState('')
   const [propertyUrl, setPropertyUrl] = useState('')
 
-  // Generar la URL SEO friendly solo en el cliente
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (property) {
       const url = generatePropertyUrl(property)
       setPropertyUrl(url)
     }
   }, [property])
+
+  // Función para manejar Escape
+  const handleEscape = () => {
+    if (showQR) {
+      setShowQR(false)
+    } else if (isOpen) {
+      onClose()
+    }
+  }
+
+  // Usar el hook para manejar Escape
+  useEscapeKey(handleEscape, isOpen || showQR)
+
+  const generateQRWithLogo = async (text: string) => {
+    try {
+      setQrLoading(true)
+      setQrError(false)
+      
+      // Generar QR base
+      const qrDataUrl = await QRCode.toDataURL(text, {
+        width: 300,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      })
+      
+      // Crear canvas para combinar QR con logo
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      canvas.width = 300
+      canvas.height = 300
+      
+      // Cargar imagen del QR
+      const qrImage = new Image()
+      qrImage.onload = () => {
+        // Dibujar QR en el canvas
+        ctx?.drawImage(qrImage, 0, 0, 300, 300)
+        
+        // Cargar logo
+        const logoImage = new Image()
+        logoImage.crossOrigin = 'anonymous'
+        logoImage.onload = () => {
+          // Calcular dimensiones del logo manteniendo proporción
+          const maxLogoSize = 80 // Tamaño máximo del logo
+          const logoAspectRatio = logoImage.width / logoImage.height
+          
+          let logoWidth, logoHeight
+          if (logoAspectRatio > 1) {
+            // Logo más ancho que alto
+            logoWidth = maxLogoSize
+            logoHeight = maxLogoSize / logoAspectRatio
+          } else {
+            // Logo más alto que ancho o cuadrado
+            logoHeight = maxLogoSize
+            logoWidth = maxLogoSize * logoAspectRatio
+          }
+          
+          const logoX = (300 - logoWidth) / 2
+          const logoY = (300 - logoHeight) / 2
+          
+          // Dibujar fondo blanco para el logo (un poco más grande que el logo)
+          ctx!.fillStyle = '#FFFFFF'
+          ctx!.fillRect(logoX - 4, logoY - 4, logoWidth + 8, logoHeight + 8)
+          
+          // Dibujar logo con sus dimensiones originales
+          ctx?.drawImage(logoImage, logoX, logoY, logoWidth, logoHeight)
+          
+          // Convertir a data URL
+          const finalQRDataUrl = canvas.toDataURL('image/png')
+          setQrDataUrl(finalQRDataUrl)
+          setQrLoading(false)
+        }
+        logoImage.onerror = () => {
+          // Si falla el logo, usar solo el QR
+          setQrDataUrl(qrDataUrl)
+          setQrLoading(false)
+        }
+        logoImage.src = '/Logo.svg'
+      }
+      qrImage.src = qrDataUrl
+      
+    } catch (error) {
+      console.error('Error generating QR:', error)
+      setQrError(true)
+      setQrLoading(false)
+    }
+  }
+
+  const generateQRCode = (text: string) => {
+    // Usar una API que soporte logos en el centro del QR
+    // Usar la URL completa del dominio actual para el logo
+    const currentDomain = typeof window !== 'undefined' ? window.location.origin : 'https://short-grupo-inmobiliario.vercel.app'
+    const logoUrl = encodeURIComponent(`${currentDomain}/Logo.svg`)
+    // Usar QR Server API con parámetros optimizados para logo en el centro
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(text)}&logo=${logoUrl}&logo_size=20%&logo_margin=0&logo_bg_color=FFFFFF&logo_corner_radius=0`
+    console.log('QR URL:', qrUrl)
+    return qrUrl
+  }
+
+  const generateQRCodeAlternative = (text: string) => {
+    // API alternativa sin logo para casos de fallo
+    return `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chl=${encodeURIComponent(text)}&chld=L|1`
+  }
 
   // Generar mensaje para compartir con información real
   const shareMessage = `¡Mira esta propiedad! ${property.titulo} - ${property.precio} ${property.moneda?.simbolo} en ${property.direccion?.barrio || property.direccion?.ciudad}`
@@ -34,56 +142,110 @@ export function SharePropertyModal({ property, isOpen, onClose }: SharePropertyM
   // Detectar si es mobile
   const isMobile = typeof window !== 'undefined' && /Mobi|Android|iPhone/i.test(navigator.userAgent);
 
+  // Función para copiar al portapapeles
+  const copyToClipboard = async (text: string) => {
+    try {
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } else {
+        // Fallback para navegadores antiguos
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    } catch (err) {
+      console.error('Error copying to clipboard:', err);
+    }
+  };
+
   const shareOptions = [
     {
       name: 'WhatsApp',
+      color: 'bg-green-600 hover:bg-green-700',
       icon: WhatsAppIcon,
-      color: 'bg-green-500 hover:bg-green-600',
       action: () => {
-        if (typeof window !== 'undefined') {
-          const url = `https://wa.me/?text=${encodeURIComponent(`${shareMessage}\n\n${propertyUrl}`)}`
-          window.open(url, '_blank')
+        // Para compartir con contactos elegidos, usar Web Share API si está disponible
+        if (navigator.share && isMobile) {
+          navigator.share({
+            title: property.titulo,
+            text: `¡Mira esta propiedad! ${property.titulo} - ${property.precio} ${property.moneda?.simbolo} en ${property.direccion?.barrio || property.direccion?.ciudad}`,
+            url: propertyUrl
+          }).catch(() => {
+            // Fallback a WhatsApp directo
+            const message = `¡Mira esta propiedad! ${property.titulo} - ${property.precio} ${property.moneda?.simbolo} en ${property.direccion?.barrio || property.direccion?.ciudad}\n\nVer propiedad: ${propertyUrl}`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+          });
+        } else {
+          // Fallback para desktop o navegadores sin Web Share API
+          const message = `¡Mira esta propiedad! ${property.titulo} - ${property.precio} ${property.moneda?.simbolo} en ${property.direccion?.barrio || property.direccion?.ciudad}\n\nVer propiedad: ${propertyUrl}`;
+          window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
         }
       }
     },
     {
       name: 'Telegram',
-      icon: TelegramIcon,
       color: 'bg-blue-500 hover:bg-blue-600',
+      icon: TelegramIcon,
       action: () => {
-        if (typeof window !== 'undefined') {
-          const url = `https://t.me/share/url?url=${encodeURIComponent(propertyUrl)}&text=${encodeURIComponent(shareMessage)}`
-          window.open(url, '_blank')
+        // Para compartir con contactos elegidos, usar Web Share API si está disponible
+        if (navigator.share && isMobile) {
+          navigator.share({
+            title: property.titulo,
+            text: `¡Mira esta propiedad! ${property.titulo} - ${property.precio} ${property.moneda?.simbolo} en ${property.direccion?.barrio || property.direccion?.ciudad}`,
+            url: propertyUrl
+          }).catch(() => {
+            // Fallback a Telegram directo
+            const message = `¡Mira esta propiedad! ${property.titulo} - ${property.precio} ${property.moneda?.simbolo} en ${property.direccion?.barrio || property.direccion?.ciudad}\n\nVer propiedad: ${propertyUrl}`;
+            window.open(`https://t.me/?text=${encodeURIComponent(message)}`, '_blank');
+          });
+        } else {
+          // Fallback para desktop o navegadores sin Web Share API
+          const message = `¡Mira esta propiedad! ${property.titulo} - ${property.precio} ${property.moneda?.simbolo} en ${property.direccion?.barrio || property.direccion?.ciudad}\n\nVer propiedad: ${propertyUrl}`;
+          window.open(`https://t.me/?text=${encodeURIComponent(message)}`, '_blank');
         }
       }
     },
     {
-      name: 'Email',
-      icon: Mail,
-      color: 'bg-gray-500 hover:bg-gray-600',
+      name: 'Facebook',
+      color: 'bg-blue-600 hover:bg-blue-700',
+      icon: FacebookIcon,
       action: () => {
-        if (typeof window !== 'undefined') {
-          const subject = encodeURIComponent(`Propiedad: ${property.titulo}`)
-          const body = encodeURIComponent(`${shareMessage}\n\nVer más detalles: ${propertyUrl}`)
-          const url = `mailto:?subject=${subject}&body=${body}`
-          window.open(url)
+        // Usar Web Share API en móvil, fallback a Facebook Share en desktop
+        if (navigator.share && isMobile) {
+          navigator.share({
+            title: property.titulo,
+            text: `¡Mira esta propiedad! ${property.titulo} - ${property.precio} ${property.moneda?.simbolo} en ${property.direccion?.barrio || property.direccion?.ciudad}`,
+            url: propertyUrl
+          }).catch(() => {
+            // Fallback a Facebook Share
+            window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(propertyUrl)}`, '_blank');
+          });
+        } else {
+          // Facebook Share para desktop
+          window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(propertyUrl)}`, '_blank');
         }
       }
     },
     {
       name: 'QR Code',
+      color: 'bg-purple-600 hover:bg-purple-700',
       icon: QrCode,
-      color: 'bg-black hover:bg-gray-800',
       action: () => {
+        setQrLoading(true)
+        setQrError(false)
         setShowQR(true)
+        // Generar QR con logo
+        generateQRWithLogo(propertyUrl)
       }
     }
   ]
-
-  const generateQRCode = (text: string) => {
-    // Usar una API gratuita para generar QR
-    return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(text)}`
-  }
 
   return (
     <AnimatePresence>
@@ -155,7 +317,7 @@ export function SharePropertyModal({ property, isOpen, onClose }: SharePropertyM
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg text-sm bg-white"
                   />
                   <button
-                    onClick={shareOptions[3].action}
+                    onClick={() => copyToClipboard(propertyUrl)}
                     className="px-3 py-2 bg-blue-600 text-white rounded-r-lg hover:bg-blue-700 transition-colors"
                   >
                     {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
@@ -173,6 +335,12 @@ export function SharePropertyModal({ property, isOpen, onClose }: SharePropertyM
                   exit={{ opacity: 0 }}
                   className="fixed inset-0 bg-black bg-opacity-50 z-60 flex items-center justify-center p-4"
                   onClick={() => setShowQR(false)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      setShowQR(false)
+                    }
+                  }}
+                  tabIndex={0}
                 >
                   <motion.div
                     initial={{ scale: 0.9, opacity: 0 }}
@@ -182,20 +350,58 @@ export function SharePropertyModal({ property, isOpen, onClose }: SharePropertyM
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="text-center">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                        Código QR
-                      </h3>
-                      <img
-                        src={generateQRCode(propertyUrl)}
-                        alt="QR Code"
-                        className="mx-auto mb-4 border border-gray-200 rounded-lg"
-                      />
+                      <div className="flex items-center justify-center mb-4">
+                        <img 
+                          src="/Logo.svg" 
+                          alt="Short Grupo Inmobiliario" 
+                          className="h-8 w-auto mr-2"
+                        />
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          Código QR
+                        </h3>
+                      </div>
+                      <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                        {qrLoading && (
+                          <div className="flex items-center justify-center h-64">
+                            <Spinner size="md" color="primary" showText text="Generando QR con logo..." />
+                          </div>
+                        )}
+                        {qrDataUrl && !qrLoading && (
+                          <img
+                            src={qrDataUrl}
+                            alt="QR Code con logo"
+                            className="mx-auto border border-gray-200 rounded-lg shadow-sm"
+                          />
+                        )}
+                        {!qrDataUrl && !qrLoading && (
+                          <img
+                            src={generateQRCode(propertyUrl)}
+                            alt="QR Code"
+                            className="mx-auto border border-gray-200 rounded-lg shadow-sm"
+                            onError={(e) => {
+                              setQrError(true)
+                              // Si falla la carga del QR con logo, usar la versión sin logo
+                              const target = e.target as HTMLImageElement;
+                              target.src = generateQRCodeAlternative(propertyUrl);
+                            }}
+                          />
+                        )}
+                        {qrError && (
+                          <div className="text-center text-sm text-gray-500 mt-2">
+                            <p>QR generado sin logo (fallback)</p>
+                          </div>
+                        )}
+                      </div>
                       <p className="text-sm text-gray-600 mb-4">
                         Escanea este código para acceder directamente a la propiedad
                       </p>
+                      <div className="text-xs text-gray-500 mb-4">
+                        <p>Propiedad: {property.titulo}</p>
+                        <p>Precio: {property.precio} {property.moneda?.simbolo}</p>
+                      </div>
                       <button
                         onClick={() => setShowQR(false)}
-                        className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                       >
                         Cerrar
                       </button>

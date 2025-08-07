@@ -4,6 +4,8 @@ import { useDispatch, useSelector } from 'react-redux'
 import { loginUser, clearError } from '@/lib/store/authSlice'
 import { RootState, AppDispatch } from '@/lib/store/store'
 import { X } from 'lucide-react'
+import { ButtonSpinner } from '@/components/ui/spinner'
+import { useEscapeKey } from '@/hooks/useEscapeKey'
 
 interface LoginModalProps {
   isOpen: boolean
@@ -16,6 +18,9 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
   
   const dispatch = useDispatch<AppDispatch>()
   const { loading, error } = useSelector((state: RootState) => state.auth)
+
+  // Usar el hook para manejar Escape
+  useEscapeKey(onClose, isOpen)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -83,7 +88,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
             disabled={loading}
             className="w-full bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
           >
-            {loading ? 'Iniciando sesión...' : 'Ingresar'}
+            {loading ? <ButtonSpinner text="Iniciando sesión..." /> : 'Ingresar'}
           </button>
         </form>
       </div>
