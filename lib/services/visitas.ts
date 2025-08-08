@@ -20,6 +20,7 @@ export interface TopPropiedad {
   visitas_totales: number;
   visitas_pc: number;
   visitas_movil: number;
+  imagenes?: string[] | Array<{url: string}>;
 }
 
 export interface EstadisticasPagina {

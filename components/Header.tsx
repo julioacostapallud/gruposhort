@@ -3,7 +3,7 @@ import NextImage from "next/image"
 import { useSelector, useDispatch } from "react-redux"
 import { RootState } from "@/lib/store/store"
 import { logoutUser } from "@/lib/store/authSlice"
-import { User, LogOut, X, Phone, Mail, MapPin, Power, Home, FileText, Users, LayoutDashboard, Gavel, Handshake } from "lucide-react"
+import { User, LogOut, X, Phone, Mail, MapPin, Power, Home, FileText, Users, LayoutDashboard, Gavel, Handshake, BarChart3 } from "lucide-react"
 import { useState } from "react"
 import { solicitudes } from "@/lib/services/solicitudes"
 import { useToast } from "@/hooks/use-toast"
@@ -17,8 +17,8 @@ interface HeaderProps {
   onToggleAdmin?: () => void
   isAdminMode?: boolean
   // NUEVO: Props para tabs admin
-  adminTab?: 'panel' | 'tasaciones' | 'venderAlquilar'
-  onChangeAdminTab?: (tab: 'panel' | 'tasaciones' | 'venderAlquilar') => void
+  adminTab?: 'panel' | 'tasaciones' | 'venderAlquilar' | 'visitas'
+  onChangeAdminTab?: (tab: 'panel' | 'tasaciones' | 'venderAlquilar' | 'visitas') => void
   tasacionesPendientes?: number
   ventasPendientes?: number
 }
@@ -141,6 +141,13 @@ export function Header({
                     {ventasPendientes}
                   </span>
                 )}
+              </button>
+              <button
+                className={`px-4 py-2 rounded-md font-medium transition-colors flex items-center gap-2` + (adminTab === 'visitas' ? ' bg-blue-600 text-white' : ' bg-gray-100 text-gray-700 hover:bg-blue-50')}
+                onClick={() => onChangeAdminTab && onChangeAdminTab('visitas')}
+              >
+                <span className="block md:hidden"><BarChart3 className="h-5 w-5" /></span>
+                <span className="hidden md:block">Estadísticas de Visitas</span>
               </button>
             </nav>
           )}

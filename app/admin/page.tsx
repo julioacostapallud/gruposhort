@@ -1,232 +1,48 @@
 'use client'
-import { Header } from '../../components/Header'
-import { Footer } from '../../components/footer'
+import { AdminSidebar } from '../../components/AdminSidebar'
 import { PropertiesTable } from '../../components/PropertiesTable';
 import { PropertyForm } from '../../components/PropertyForm';
 import { PropertyEditForm } from '../../components/PropertyEditForm';
 import { PropertyFilter } from '../../components/PropertyFilter';
-import { Plus, Filter, X, Eye } from 'lucide-react';
+import { SolicitudesManager } from '../../components/SolicitudesManager';
+import { EstadisticasManager } from '../../components/EstadisticasManager';
+import { Plus, Filter, X, Menu, User, LogOut } from 'lucide-react';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
 import { useState, useEffect } from 'react';
 import { Propiedad } from '../../lib/services/propiedades';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../lib/store/store';
 import { checkAuthStatus, logoutUser } from '../../lib/store/authSlice';
 import { fetchProperties } from '../../lib/store/propertiesSlice';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { solicitudes } from '../../lib/services/solicitudes'
-import { visitas } from '../../lib/services/visitas'
-import { Button } from "@/components/ui/button"
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from "@/components/ui/table"
-import { Input } from "@/components/ui/input"
-import { Spinner, LoadingScreen } from '@/components/ui/spinner'
-
-function HeroSolicitudes({ value, onChange, title }: { value: string, onChange: (v: string) => void, title: string }) {
-  return (
-    <section className="relative bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
-      <div className="container mx-auto px-4 text-center">
-        <h1 className="text-4xl md:text-5xl font-bold mb-6">{title}</h1>
-        <div className="max-w-3xl mx-auto relative mb-8">
-          <div className="flex items-center bg-white rounded-lg overflow-hidden shadow-lg">
-            <input
-              type="text"
-              placeholder="Buscar solicitud..."
-              value={value}
-              onChange={e => onChange(e.target.value)}
-              className="flex-grow px-6 py-4 text-gray-800 focus:outline-none"
-            />
-          </div>
-        </div>
-      </div>
-    </section>
-  )
-}
-
-function TablaSolicitudesTasacion() {
-  const [data, setData] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [modalId, setModalId] = useState<number | null>(null)
-  const [search, setSearch] = useState("")
-
-  useEffect(() => { cargar() }, [])
-  const cargar = () => {
-    setLoading(true)
-    solicitudes.listarTasaciones().then(setData).finally(() => setLoading(false))
-  }
-  const atender = async (id: number) => {
-    await solicitudes.marcarTasacionAtendida(id)
-    setModalId(null)
-    cargar()
-  }
-  const filtered = data.filter(s => {
-    const q = search.toLowerCase()
-    return (
-      s.nombre?.toLowerCase().includes(q) ||
-      s.email?.toLowerCase().includes(q) ||
-      s.telefono?.toLowerCase().includes(q) ||
-      s.mensaje?.toLowerCase().includes(q) ||
-      (s.atendido ? 'sí' : 'no').includes(q)
-    )
-  })
-  return (
-    <>
-      <HeroSolicitudes value={search} onChange={setSearch} title="Solicitudes de Tasación" />
-      <div className="container mx-auto px-4 mt-16 pb-16">
-        <div className="bg-white rounded-lg shadow-md overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-blue-700">
-                <TableHead className="text-white font-bold">Nombre</TableHead>
-                <TableHead className="text-white font-bold">Email</TableHead>
-                <TableHead className="text-white font-bold">Teléfono</TableHead>
-                <TableHead className="text-white font-bold">Mensaje</TableHead>
-                <TableHead className="text-white font-bold">Atendido</TableHead>
-                <TableHead className="text-white font-bold">Acción</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((s) => (
-                <TableRow key={s.id} className={s.atendido ? '' : 'bg-red-50'}>
-                  <TableCell>{s.nombre}</TableCell>
-                  <TableCell>{s.email}</TableCell>
-                  <TableCell>{s.telefono}</TableCell>
-                  <TableCell><span className="whitespace-pre-line">{s.mensaje}</span></TableCell>
-                  <TableCell>{s.atendido ? 'Sí' : 'No'}</TableCell>
-                  <TableCell>
-                    {!s.atendido && (
-                      <>
-                        <Button onClick={() => setModalId(s.id)} size="sm">Atender</Button>
-                        {modalId === s.id && (
-                          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-                            <div className="bg-white p-6 rounded shadow">
-                              <p>¿Marcar como atendida?</p>
-                              <div className="flex gap-2 mt-4">
-                                <Button onClick={() => atender(s.id)} size="sm" variant="default">Confirmar</Button>
-                                <Button onClick={() => setModalId(null)} size="sm" variant="secondary">Cancelar</Button>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          {loading && <div className="text-center py-4">Cargando...</div>}
-        </div>
-      </div>
-    </>
-  )
-}
-
-function TablaSolicitudesVenderAlquilar() {
-  const [data, setData] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [modalId, setModalId] = useState<number | null>(null)
-  const [search, setSearch] = useState("")
-
-  useEffect(() => { cargar() }, [])
-  const cargar = () => {
-    setLoading(true)
-    solicitudes.listarVenderAlquilar().then(setData).finally(() => setLoading(false))
-  }
-  const atender = async (id: number) => {
-    await solicitudes.marcarVenderAlquilarAtendida(id)
-    setModalId(null)
-    cargar()
-  }
-  const filtered = data.filter(s => {
-    const q = search.toLowerCase()
-    return (
-      s.nombre?.toLowerCase().includes(q) ||
-      s.email?.toLowerCase().includes(q) ||
-      s.telefono?.toLowerCase().includes(q) ||
-      s.mensaje?.toLowerCase().includes(q) ||
-      (s.atendido ? 'sí' : 'no').includes(q)
-    )
-  })
-  return (
-    <>
-      <HeroSolicitudes value={search} onChange={setSearch} title="Solicitudes de Ventas y Alquiler" />
-      <div className="container mx-auto px-4 mt-16 pb-16">
-        <div className="bg-white rounded-lg shadow-md overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-blue-700">
-                <TableHead className="text-white font-bold">Nombre</TableHead>
-                <TableHead className="text-white font-bold">Email</TableHead>
-                <TableHead className="text-white font-bold">Teléfono</TableHead>
-                <TableHead className="text-white font-bold">Mensaje</TableHead>
-                <TableHead className="text-white font-bold">Atendido</TableHead>
-                <TableHead className="text-white font-bold">Acción</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((s) => (
-                <TableRow key={s.id} className={s.atendido ? '' : 'bg-red-50'}>
-                  <TableCell>{s.nombre}</TableCell>
-                  <TableCell>{s.email}</TableCell>
-                  <TableCell>{s.telefono}</TableCell>
-                  <TableCell><span className="whitespace-pre-line">{s.mensaje}</span></TableCell>
-                  <TableCell>{s.atendido ? 'Sí' : 'No'}</TableCell>
-                  <TableCell>
-                    {!s.atendido && (
-                      <>
-                        <Button onClick={() => setModalId(s.id)} size="sm">Atender</Button>
-                        {modalId === s.id && (
-                          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-                            <div className="bg-white p-6 rounded shadow">
-                              <p>¿Marcar como atendida?</p>
-                              <div className="flex gap-2 mt-4">
-                                <Button onClick={() => atender(s.id)} size="sm" variant="default">Confirmar</Button>
-                                <Button onClick={() => setModalId(null)} size="sm" variant="secondary">Cancelar</Button>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          {loading && <div className="text-center py-4">Cargando...</div>}
-        </div>
-      </div>
-    </>
-  )
-}
+import { Spinner } from '@/components/ui/spinner'
 
 export default function AdminPage() {
+  // Estados para navegación del sidebar
+  const [activeSection, setActiveSection] = useState<'propiedades' | 'solicitudes' | 'estadisticas'>('propiedades')
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [showUserMenu, setShowUserMenu] = useState(false)
+  const [sidebarTimeout, setSidebarTimeout] = useState<NodeJS.Timeout | null>(null)
+  
+  // Estados para propiedades
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [currentFilters, setCurrentFilters] = useState<any>(null);
-  
   const [showNewPropertyModal, setShowNewPropertyModal] = useState(false);
   const [showEditPropertyModal, setShowEditPropertyModal] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<Propiedad | null>(null);
   const [propertiesVersion, setPropertiesVersion] = useState(0);
-  
-  const [adminView, setAdminView] = useState<'panel' | 'tasaciones' | 'venderAlquilar'>('panel');
+  const [filteredProperties, setFilteredProperties] = useState<Propiedad[]>([]);
+
+  // Estados para solicitudes
   const [tasacionesPendientes, setTasacionesPendientes] = useState(0);
   const [ventasPendientes, setVentasPendientes] = useState(0);
-  const [visitasSitio, setVisitasSitio] = useState(0);
 
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { isAuthenticated, user, loading } = useSelector((state: RootState) => state.auth as any);
   const { properties, loading: propertiesLoading } = useSelector((state: RootState) => state.properties);
-  const [filteredProperties, setFilteredProperties] = useState<Propiedad[]>([]);
 
   // Cargar propiedades usando Redux
   useEffect(() => {
@@ -240,38 +56,14 @@ export default function AdminPage() {
     }
   }, [properties])
 
-  // Asegurar que filteredProperties se inicialice con las propiedades cuando estén disponibles
-  useEffect(() => {
-    if (properties.length > 0 && filteredProperties.length === 0) {
-      setFilteredProperties(properties)
-    }
-  }, [properties, filteredProperties.length])
-
-  // Función para actualizar URL con filtros
-  const updateUrlWithFilters = (filters: any) => {
-    const params = new URLSearchParams()
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== '') {
-        params.set(key, String(value))
-      }
-    })
-    router.replace(`/admin?${params.toString()}`, { scroll: false })
-  }
-
   // Función para manejar los filtros
   const handleFilter = (filters: any) => {
     setCurrentFilters(filters)
-    
-    // Actualizar URL con filtros
-    updateUrlWithFilters(filters)
-    
-    // Aplicar filtros a las propiedades
     applyFilters(properties, filters, searchTerm)
   }
 
   // Función para aplicar filtros y búsqueda
   const applyFilters = (props: Propiedad[], filters: any, search: string) => {
-    
     let filtered = props
 
     // Aplicar búsqueda por texto
@@ -318,76 +110,37 @@ export default function AdminPage() {
       })
     }
     
-    // Actualizar propiedades filtradas
     setFilteredProperties(filtered)
   }
 
-  // Cargar filtros desde URL al montar el componente
+  // Cargar datos de solicitudes pendientes
   useEffect(() => {
-    if (typeof window !== 'undefined' && properties.length > 0) {
-      const urlParams = new URLSearchParams(window.location.search)
-      const filtersFromUrl: any = {}
-
-      // Mapear parámetros de URL a filtros
-      const urlFilters = {
-        tipo_propiedad: urlParams.get('tipo_propiedad'),
-        operacion: urlParams.get('operacion'),
-        precio_min: urlParams.get('precio_min'),
-        precio_max: urlParams.get('precio_max'),
-        ciudad: urlParams.get('ciudad'),
-        dormitorios: urlParams.get('dormitorios'),
-        moneda: urlParams.get('moneda')
-      }
-
-      // Solo agregar filtros que tengan valor
-      Object.entries(urlFilters).forEach(([key, value]) => {
-        if (value) {
-          filtersFromUrl[key] = value
-        }
-      })
-
-      if (Object.keys(filtersFromUrl).length > 0) {
-        setCurrentFilters(filtersFromUrl)
-        applyFilters(properties, filtersFromUrl, searchTerm)
+    const cargarSolicitudesPendientes = async () => {
+      try {
+        const [tasaciones, ventas] = await Promise.all([
+          solicitudes.listarTasaciones(),
+          solicitudes.listarVenderAlquilar()
+        ])
+        
+        setTasacionesPendientes(tasaciones.filter((s: any) => !s.atendido).length)
+        setVentasPendientes(ventas.filter((s: any) => !s.atendido).length)
+      } catch (error) {
+        console.error('Error cargando solicitudes pendientes:', error)
       }
     }
-  }, [properties]) // Se ejecuta cuando se cargan las propiedades
+    
+    cargarSolicitudesPendientes()
+  }, [])
 
-  // Filtrar por término de búsqueda
+  // Verificar autenticación
   useEffect(() => {
-    applyFilters(properties, currentFilters, searchTerm)
-  }, [searchTerm, properties, currentFilters])
-
-  // Cargar contadores de pendientes y visitas del sitio
-  useEffect(() => {
-    solicitudes.listarTasaciones().then(data => {
-      setTasacionesPendientes(data.filter((s: any) => !s.atendido).length)
-    })
-    solicitudes.listarVenderAlquilar().then(data => {
-      setVentasPendientes(data.filter((s: any) => !s.atendido).length)
-    })
-    // Cargar estadísticas de visitas del sitio
-    visitas.obtenerEstadisticasPagina('hoy').then(data => {
-      setVisitasSitio(data.estadisticas.visitas_totales)
-    }).catch(error => {
-      console.error('Error cargando visitas del sitio:', error)
-    })
-  }, [adminView])
-
-  useEffect(() => {
-    dispatch(checkAuthStatus());
-  }, [dispatch]);
-
-  useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      router.push('/');
-    }
-  }, [isAuthenticated, loading, router]);
+    dispatch(checkAuthStatus() as any)
+  }, [dispatch])
 
   const handleLogout = async () => {
-    await dispatch(logoutUser());
-    router.push('/');
-  };
+    await dispatch(logoutUser() as any)
+    router.push('/')
+  }
 
   const handleViewProperty = (property: Propiedad) => {
     setSelectedProperty(property);
@@ -409,6 +162,33 @@ export default function AdminPage() {
     setPropertiesVersion(v => v + 1);
   };
 
+  // Manejar cambios de sección del sidebar
+  const handleSectionChange = (section: 'propiedades' | 'solicitudes' | 'estadisticas') => {
+    setActiveSection(section)
+  }
+
+  const handleToggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen)
+  }
+
+  const handleSidebarOpen = () => {
+    if (sidebarTimeout) {
+      clearTimeout(sidebarTimeout)
+      setSidebarTimeout(null)
+    }
+    setSidebarOpen(true)
+  }
+
+  const handleSidebarClose = () => {
+    const timeout = setTimeout(() => {
+      setSidebarOpen(false)
+    }, 300) // 300ms de delay
+    setSidebarTimeout(timeout)
+  }
+
+  // Usar el hook para manejar Escape
+  useEscapeKey(() => setShowUserMenu(false), showUserMenu)
+
   if (loading || propertiesLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -424,158 +204,218 @@ export default function AdminPage() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col">
-      <Header
-        variant="admin"
-        isAdminMode={true}
-        onLogout={handleLogout}
-        adminTab={adminView}
-        onChangeAdminTab={setAdminView}
+    <div className="min-h-screen flex">
+      {/* Sidebar */}
+      <AdminSidebar
+        activeSection={activeSection}
+        isOpen={sidebarOpen}
+        onToggle={handleToggleSidebar}
+        onClose={handleSidebarClose}
+        onSectionChange={handleSectionChange}
         tasacionesPendientes={tasacionesPendientes}
         ventasPendientes={ventasPendientes}
       />
-      <div className="flex-1">
-        {/* Vistas condicionales */}
-        {adminView === 'panel' && (
-          <>
-            {/* Hero Section */}
-            <section className="relative bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
-              <div className="container mx-auto px-4 text-center">
-                <div className="flex items-center justify-center gap-4 mb-6">
-                  <h1 className="text-4xl md:text-5xl font-bold">Panel Admin</h1>
-                  
-                  {/* Badge de visitas al sitio */}
-                  <div className="inline-flex items-center bg-yellow-400 text-yellow-900 px-4 py-2 rounded-full text-sm font-medium shadow-lg">
-                    <Eye className="h-4 w-4 mr-2" />
-                    Visitas al sitio: {visitasSitio}
+
+      {/* Contenido Principal */}
+      <div className="flex-1 flex flex-col">
+        {/* Header personalizado */}
+        <header className="bg-white border-b border-gray-200 px-6 py-4">
+          <div className="flex items-center justify-between">
+            {/* Botón de menú */}
+            <div 
+              className="relative"
+              onMouseEnter={handleSidebarOpen}
+            >
+              <button
+                className="p-2 rounded-lg hover:bg-gray-100 transition-colors group"
+              >
+                <Menu className="h-6 w-6 text-gray-700 group-hover:text-blue-600 transition-colors" />
+              </button>
+            </div>
+
+            {/* Logo y título centrados */}
+            <div className="flex items-center gap-3">
+              <img src="/Logo.svg" alt="Short" className="h-8 w-auto" />
+              <div>
+                <h1 className="text-lg font-bold text-gray-900">Panel de Administración</h1>
+                <h2 className="text-sm font-medium text-orange-500">
+                  {activeSection === 'propiedades' && 'Gestión de Propiedades'}
+                  {activeSection === 'solicitudes' && 'Gestión de Solicitudes'}
+                  {activeSection === 'estadisticas' && 'Estadísticas'}
+                </h2>
+              </div>
+            </div>
+
+            {/* Menú de usuario */}
+            <div className="flex items-center space-x-4">
+              <div className="relative">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white hover:bg-blue-700 transition-colors"
+                >
+                  <User size={20} />
+                </button>
+                {/* Menú desplegable */}
+                {showUserMenu && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-50">
+                    <div className="px-4 py-2 border-b border-gray-100">
+                      <p className="text-sm font-medium text-gray-900">{user?.nombre}</p>
+                      <p className="text-xs text-gray-500">{user?.email}</p>
+                      <p className="text-xs text-blue-600 capitalize">{user?.rol}</p>
+                    </div>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                    >
+                      <LogOut size={16} className="mr-2" />
+                      Cerrar Sesión
+                    </button>
                   </div>
-                </div>
-                
-                <p className="text-xl mb-8 max-w-2xl mx-auto">
-                  Administra y visualiza todas las propiedades de Short Grupo Inmobiliario
-                </p>
-                
-                {/* Búsqueda principal */}
-                <div className="max-w-3xl mx-auto relative mb-8">
-                  <div className="flex items-center bg-white rounded-lg overflow-hidden shadow-lg">
+                )}
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Overlay para cerrar el menú al hacer click fuera */}
+        {showUserMenu && (
+          <div 
+            className="fixed inset-0 z-40"
+            onClick={() => setShowUserMenu(false)}
+          />
+        )}
+        
+        <main className="flex-1 bg-gray-50">
+          {/* Sección de Propiedades */}
+          {activeSection === 'propiedades' && (
+            <div className="p-6">
+              {/* Búsqueda y Filtros */}
+              <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+                <div className="flex flex-col lg:flex-row gap-4">
+                  {/* Búsqueda */}
+                  <div className="flex-1">
                     <input
                       type="text"
                       placeholder="Buscar propiedades por título o descripción..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="flex-grow px-6 py-4 text-gray-800 focus:outline-none"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
-                    <button 
-                      onClick={() => setShowFilters(!showFilters)}
-                      className="bg-blue-600 text-white px-6 py-4 hover:bg-blue-700 transition-colors flex items-center"
-                    >
-                      <Filter className="mr-2" size={20} />
-                      <span>Filtros</span>
-                    </button>
                   </div>
+                  
+                  {/* Botón Filtros */}
+                  <button 
+                    onClick={() => setShowFilters(!showFilters)}
+                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
+                  >
+                    <Filter className="mr-2" size={20} />
+                    <span>Filtros</span>
+                  </button>
                 </div>
 
                 {/* Filtros expandibles */}
                 {showFilters && (
-                  <div className="max-w-4xl mx-auto">
+                  <div className="mt-6 pt-6 border-t border-gray-200">
                     <PropertyFilter onFilter={handleFilter} properties={properties} />
                   </div>
                 )}
               </div>
-            </section>
 
-            {/* Tabla de propiedades */}
-            <section className="py-16 bg-gray-50">
-              <div className="container mx-auto px-4">
-                <PropertiesTable
-                  onViewProperty={handleViewProperty}
-                  onEditProperty={handleEditProperty}
-                  onNewProperty={handleNewProperty}
-                  propertiesVersion={propertiesVersion}
-                  filteredProperties={filteredProperties}
-                  searchTerm={searchTerm}
-                />
+              {/* Tabla de propiedades */}
+              <PropertiesTable
+                onViewProperty={handleViewProperty}
+                onEditProperty={handleEditProperty}
+                onNewProperty={handleNewProperty}
+                propertiesVersion={propertiesVersion}
+                filteredProperties={filteredProperties}
+                searchTerm={searchTerm}
+              />
+
+              {/* Botón flotante */}
+              <div className="fixed bottom-6 right-6">
+                <button
+                  onClick={handleNewProperty}
+                  className="bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-colors"
+                >
+                  <Plus className="h-6 w-6" />
+                </button>
               </div>
-            </section>
+            </div>
+          )}
 
-            {/* Botón flotante */}
-            <div className="fixed bottom-6 right-6">
+          {/* Sección de Solicitudes */}
+          {activeSection === 'solicitudes' && (
+            <div className="h-full">
+              <SolicitudesManager 
+                tasacionesPendientes={tasacionesPendientes}
+                ventasPendientes={ventasPendientes}
+              />
+            </div>
+          )}
+
+          {/* Sección de Estadísticas */}
+          {activeSection === 'estadisticas' && (
+            <div className="h-full">
+              <EstadisticasManager />
+            </div>
+          )}
+        </main>
+      </div>
+
+      {/* Modales */}
+      {showNewPropertyModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setShowNewPropertyModal(false)
+            }
+          }}
+          tabIndex={0}
+        >
+          <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold">Nueva Propiedad</h2>
               <button
-                onClick={handleNewProperty}
-                className="bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-colors"
+                onClick={() => setShowNewPropertyModal(false)}
+                className="text-gray-400 hover:text-gray-600"
               >
-                <Plus className="h-6 w-6" />
+                <X className="h-6 w-6" />
               </button>
             </div>
+            <PropertyForm onSuccess={handlePropertySuccess} onCancel={() => setShowNewPropertyModal(false)} />
+          </div>
+        </div>
+      )}
 
-            {/* Modales simplificados - Solo HTML nativo */}
-            {showNewPropertyModal && (
-              <div 
-                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape') {
-                    setShowNewPropertyModal(false)
-                  }
-                }}
-                tabIndex={0}
+      {showEditPropertyModal && selectedProperty && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setShowEditPropertyModal(false)
+            }
+          }}
+          tabIndex={0}
+        >
+          <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold">Editar Propiedad</h2>
+              <button
+                onClick={() => setShowEditPropertyModal(false)}
+                className="text-gray-400 hover:text-gray-600"
               >
-                <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-                  <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold">Nueva Propiedad</h2>
-                    <button
-                      onClick={() => setShowNewPropertyModal(false)}
-                      className="text-gray-400 hover:text-gray-600"
-                    >
-                      <X className="h-6 w-6" />
-                    </button>
-                  </div>
-                  <PropertyForm onSuccess={handlePropertySuccess} onCancel={() => setShowNewPropertyModal(false)} />
-                </div>
-              </div>
-            )}
-
-            {showEditPropertyModal && selectedProperty && (
-              <div 
-                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape') {
-                    setShowEditPropertyModal(false)
-                  }
-                }}
-                tabIndex={0}
-              >
-                <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-                  <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold">Editar Propiedad</h2>
-                    <button
-                      onClick={() => setShowEditPropertyModal(false)}
-                      className="text-gray-400 hover:text-gray-600"
-                    >
-                      <X className="h-6 w-6" />
-                    </button>
-                  </div>
-                  <PropertyEditForm 
-                    property={selectedProperty} 
-                    onSuccess={handlePropertySuccess}
-                    onCancel={() => setShowEditPropertyModal(false)}
-                  />
-                </div>
-              </div>
-            )}
-          </>
-        )}
-        {adminView === 'tasaciones' && (
-          <section className="py-16 bg-gray-50 min-h-[60vh]">
-            <TablaSolicitudesTasacion />
-          </section>
-        )}
-        {adminView === 'venderAlquilar' && (
-          <section className="py-16 bg-gray-50 min-h-[60vh]">
-            <TablaSolicitudesVenderAlquilar />
-          </section>
-        )}
-      </div>
-      <Footer />
-    </main>
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            <PropertyEditForm 
+              property={selectedProperty} 
+              onSuccess={handlePropertySuccess}
+              onCancel={() => setShowEditPropertyModal(false)}
+            />
+          </div>
+        </div>
+      )}
+    </div>
   )
 } 
