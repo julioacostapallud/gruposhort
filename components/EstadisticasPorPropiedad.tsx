@@ -310,7 +310,12 @@ export function EstadisticasPorPropiedad({}: EstadisticasPorPropiedadProps) {
   if (loading) {
     return (
       <div className="p-8 flex justify-center">
-        <Spinner />
+        <Spinner 
+          size="lg" 
+          color="primary" 
+          showText 
+          text="Cargando estadísticas por propiedad..." 
+        />
       </div>
     )
   }

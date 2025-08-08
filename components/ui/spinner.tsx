@@ -24,38 +24,27 @@ export function Spinner({
   }
 
   const colorClasses = {
-    primary: 'border-blue-600',
-    white: 'border-white',
-    gray: 'border-gray-400'
+    primary: 'border-t-blue-600',
+    white: 'border-t-white',
+    gray: 'border-t-gray-400'
   }
 
   return (
     <div className={cn('flex flex-col items-center justify-center', className)}>
       <div className="relative">
-        {/* Spinner principal con gradiente */}
-        <div className={cn(
-          'animate-spin rounded-full border-2 border-gray-200',
-          sizeClasses[size]
-        )}>
-          <div className={cn(
-            'absolute inset-0 rounded-full border-2 border-transparent border-t-current',
-            colorClasses[color],
-            'animate-pulse'
-          )}></div>
-        </div>
-        
-        {/* Punto central */}
-        <div className={cn(
-          'absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2',
-          'w-1 h-1 rounded-full',
-          color === 'primary' ? 'bg-blue-600' : 
-          color === 'white' ? 'bg-white' : 'bg-gray-400'
-        )}></div>
+        {/* Spinner simple */}
+        <div 
+          className={cn(
+            'rounded-full border-4 border-gray-200 animate-spin',
+            sizeClasses[size],
+            colorClasses[color]
+          )}
+        />
       </div>
       
       {/* Texto opcional */}
       {showText && text && (
-        <p className="mt-3 text-sm text-gray-600 font-medium animate-pulse">
+        <p className="mt-3 text-sm text-gray-600 font-medium">
           {text}
         </p>
       )}

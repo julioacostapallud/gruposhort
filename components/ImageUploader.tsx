@@ -427,7 +427,7 @@ export function ImageUploader({
                         </div>
                         {img.isUploading ? (
                           <div className="d-flex align-items-center justify-content-center w-100 h-100 bg-light">
-                            <Spinner size="sm" />
+                            <Spinner size="sm" color="primary" showText text="Subiendo..." />
                           </div>
                         ) : (
                           <img
